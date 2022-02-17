@@ -12,31 +12,76 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
     integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
 
+  <style>
+    /* Media screen para pantallas mas chicas que 750px */
+    /* On screens that are 992px wide or less, the background color is blue */
+    @media screen and (max-width: 992px) {
+
+      .container {
+        flex-direction: column;
+      }
+
+      .tablaBotones {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+      }
+
+      .textArea {
+        max-width: 100%;
+      }
+    }
+  </style>
+
 </head>
 
 <body>
+  <h1>Analizador Lexico</h1>
   <div class="container">
-    <h1>Analizador Lexico</h1>
-    <textarea class="form-control" id="input" placeholder="Codigo a analizar" rows="10" cols="100" wrap="soft">
+    <textarea class="form-control textArea" id="input" placeholder="Codigo a analizar" rows="10" cols="100" wrap="soft">
     </textarea>
-    <button type="button" class="btn btn-dark" onclick="getTexto()">Analizar</button>
-    <!-- tabla de tokens -->
-    <table id="table" class="table">
-      <thead>
-        <tr>
-          <th>Linea</th>
-          <th>Tipo</th>
-          <th>Token</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>hola</td>
-          <td>como</td>
-          <td>estas</td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="tablaBotones">
+      <!-- tabla de datos -->
+      <div class="datos">
+        <table id="tablaDeDatos" class="table">
+          <thead>
+            <tr>
+              <th>Tokens totales</th>
+              <th>Lineas analizadas</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <!-- tabla de tokens -->
+      <div class="tabla">
+        <table id="tablaDeSimbolos" class="table">
+          <thead>
+            <tr>
+              <th>Linea</th>
+              <th>Columna</th>
+              <th>Tipo</th>
+              <th>Token</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <br><br><br>
+      <div class="botones">
+        <button type="button" class="btn btn-dark" onclick="getTexto()">Analizar</button>
+        <button type="button" class="btn btn-dark" onclick="pruebas()">Borrar</button>
+      </div>
+    </div>
+
 
   </div>
 
