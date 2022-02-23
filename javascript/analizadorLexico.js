@@ -334,10 +334,23 @@ function getcadenaDeCodigo(lineasCodigo) {
       if (/[0-9]/.test(lineasCodigo[i].charAt(j))) {
         //Recuperamos el numero
         let numero = "";
+        let puntos = 0;
         while (/[0-9.]/.test(lineasCodigo[i].charAt(j))) {
           //Recuperamos el numero
+          
           numero += lineasCodigo[i][j];
+          //!Si encuentra un punto, es un flotante
+          //Si encuentra mas de un punto el programa ciclo finaliza
+          if (lineasCodigo[i].charAt(j) == ".") {
+            puntos++;
+          }
           j++;
+        }
+        if (puntos > 1) {
+            console.error("Error: Existe mas de un punto");
+          construirTablaDeSimbolos(i + 1, j + 1, "token no reconocido", numero);
+          j--;
+          continue;
         }
         //Guardamos el numero en la tabla de simbolos
         construirTablaDeSimbolos(i + 1, j + 1, "numero", numero);
@@ -399,6 +412,25 @@ function getcadenaDeCodigo(lineasCodigo) {
       if (lineasCodigo[i] == " ") {
         continue;
       }
+
+      //!Si encuentra un caracter no reconocido, es un token no reconocido
+      //Entra en un ciclo hasta que el siguiente caracter sea un espacio un tabulador un salto de linea o el final de la linea
+      let tokenNoReconocido = "";
+      while (
+        lineasCodigo[i].charAt(j) != " " &&
+        lineasCodigo[i].charAt(j) != "\t" &&
+        lineasCodigo[i].charAt(j) != "\n" &&
+        j < lineasCodigo[i].length
+      ) {
+        tokenNoReconocido += lineasCodigo[i][j];
+        j++;
+      }
+      construirTablaDeSimbolos(
+        i + 1,
+        j + 1,
+        "token no reconocido",
+        tokenNoReconocido
+      );
     }
   }
   //console.log("Termino de recorrer el texto y recuperar tokens");
@@ -460,7 +492,7 @@ function limpiarTablas() {
   } else datos.deleteRow(drowCount - 1);
 
   let i = 1;
-  while ((srowCount -1) != i) {
+  while (srowCount - 1 != i) {
     simbolos.deleteRow(srowCount - i);
     i++;
   }
