@@ -704,7 +704,6 @@ function cleanTables() {
     i++;
   }
 
-  // tablaDeSimbolos = [];
 }
 
 //funcion principal que llama a todas las funciones
