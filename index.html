@@ -35,7 +35,7 @@
 
 </head>
 
-<body>
+<body onload="clearErrorConsole()">
   <h1>Analizador Lexico</h1>
   <div class="container">
     <textarea class="form-control textArea" id="input" placeholder="Codigo a analizar" rows="10" cols="100" wrap="soft">
@@ -80,12 +80,12 @@
       <div class="botones">
         <button type="button" class="btn btn-dark" onclick="mainLexico()">Lexico</button>
         <button type="button" class="btn btn-dark" onclick="mainSintactico()">Sintactico</button>
-        <button type="button" class="btn btn-dark" onclick="hola('5+(5-5%(4/6)(2%4/6#%4)(8+5(8+65*8)))')">Prueba</button>
+        <button type="button" class="btn btn-dark" onclick="test()">Prueba</button>
       </div>
       <div class="erroresSintacticos" style="width: 100%;">
         <h1>Errores Sintacticos</h1>
         <!-- Contiene una caja de texto con estilo de bootstrap no editable donde se monstraran los errores -->
-        <textarea style="width: 100%;" id="erroresSintacticos" placeholder="Errores Sintacticos"></textarea>
+        <textarea readOnly = true style="width: 100%;" id="erroresSintacticos" placeholder="Errores Sintacticos"></textarea>
       </div>
 
     </div>
