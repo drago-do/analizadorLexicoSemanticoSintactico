@@ -1,6 +1,5 @@
 // Este es el archivo en el que se desarrollara el codigo del analizador lexico
-var tablaDeSimbolos = [];
-let numberOfLines;
+
 
 //Metodo que se encarga recuperar el texto (codigo) que hay en la etiqueta <textarea> del documento html
 function getTextOfHMTL() {
@@ -17,9 +16,9 @@ function tokenConstructor(lineasCodigo) {
   //Limpiamos todo dato que exista anteriormente
   //Recorremos cada linea
   numberOfLines = lineasCodigo.length;
-  console.log("El codigo tiene: " + numberOfLines + " lineas");
+  //console.log("El codigo tiene: " + numberOfLines + " lineas");
   for (var i = 0; i < lineasCodigo.length; i++) {
-    console.log("Se esta recorriendo la linea: " + i);
+    //console.log("Se esta recorriendo la linea: " + i);
     //Recuperamos cada caracter de la linea
     for (var j = 0; j < lineasCodigo[i].length; j++) {
       //Si la cadena empieza con espacios o tabulaciones, se eliminan
@@ -314,6 +313,28 @@ function tokenConstructor(lineasCodigo) {
         );
         continue;
       }
+      //!Si encuentra el simbolo (, es un operador aritmetico
+      if (lineasCodigo[i].charAt(j) == "(") {
+        construirTablaDeSimbolos(
+          i + 1,
+          j + 1,
+          "operador aritmetico",
+          "(",
+          "oa("
+        );
+        continue;
+      }
+      //!Si encuentra el simbolo (, es un operador aritmetico
+      if (lineasCodigo[i].charAt(j) == ")") {
+        construirTablaDeSimbolos(
+          i + 1,
+          j + 1,
+          "operador aritmetico",
+          ")",
+          "oa)"
+        );
+        continue;
+      }
       //******************************OPERADORES RELACIONALES**************************************
       //!Si encuentra el simbolo <=, es un operador relacional
       if (lineasCodigo[i].substring(j, j + 2) == "<=") {
@@ -523,7 +544,7 @@ function tokenConstructor(lineasCodigo) {
           j++;
         }
         if (puntos > 1) {
-          console.error("Error: Existe mas de un punto");
+          //console.error("Error: Existe mas de un punto");
           construirTablaDeSimbolos(
             i + 1,
             j + 1,
@@ -641,8 +662,8 @@ function tokenConstructor(lineasCodigo) {
       );
     }
   }
-  console.log("Termino de recorrer el texto y recuperar tokens");
-  console.log(tablaDeSimbolos);
+  //console.log("Termino de recorrer el texto y recuperar tokens");
+  //console.log(tablaDeSimbolos);
 }
 
 //Metodo para construir los objetos de la tabla de simbolos
@@ -707,7 +728,7 @@ function cleanTables() {
 }
 
 //funcion principal que llama a todas las funciones
-function main() {
+function mainLexico() {
   //Limpiamos la tabla de simbolos y de datos
   cleanTables();
   tablaDeSimbolos = [];
@@ -720,15 +741,4 @@ function main() {
   showTablesOnHTML();
 }
 
-function aritLogic(exprecion) {
-  let e = exprecion;
-  //condicion que evalua si existen numeros en e
 
-  // condicion que evalua que en la expresion que solo existan numeros
-  if (e == "e") {
-    console.log("Correcto: " + exprecion);
-  } else {
-    console.error("Aun no cumple con la condicion");
-    return;
-  }
-}
