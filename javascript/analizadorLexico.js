@@ -122,16 +122,16 @@ function tokenConstructor(lineasCodigo) {
       }
 
       //!Si se encuentra la palabra fine_ripetere, es el fin de la estructura de control "fine"
-      if (lineasCodigo[i].substring(j, j + 13) == "fine_ripetere") {
+      if (lineasCodigo[i].substring(j, j + 14) == "~fine_ripetere") {
         //Guardamos la palabra reservada en nuestra tabla de simbolos
         construirTablaDeSimbolos(
           i + 1,
           j + 1,
           "estructura de control",
-          "fine_ripetere",
+          "~fine_ripetere",
           "edcFR"
         );
-        j = j + 12;
+        j = j + 13;
         continue;
       }
       //!Si la linea empieza con la palabra fine_se, es el fin de la estructura de control "if else"
