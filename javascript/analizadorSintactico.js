@@ -14,45 +14,79 @@ function mainSintactico() {
     //Recorre la tabla de simbolos con un for
     for (var i = 0; i < tablaDeSimbolos.length; i++) {
       //!Comprueba si existe classe en la tabla de simbolos
-      if (
-        tablaDeSimbolos[i].opCode == "c" ||
-        !buscarEnTablaDeVariables("Clase Principal")
-      ) {
-        const [evaluaClasePrincipal, nuevai] = clasePrincipal(
-          tablaDeSimbolos,
-          i
-        );
-        if (evaluaClasePrincipal == false) {
-          errorEncontrado =
-            errorEncontrado +
-            "\n Error en la clase principal, linea: " +
-            tablaDeSimbolos[i].linea;
-          console.error(errorEncontrado);
-          errorSintactico(errorEncontrado);
-          break;
+      if (tablaDeSimbolos[i].opCode == "c") {
+        if (!buscarEnTablaDeFunciones("Clase Principal")) {
+          const [evaluaClasePrincipal, nuevai] = clasePrincipal(
+            tablaDeSimbolos,
+            i
+          );
+          if (evaluaClasePrincipal == false) {
+            errorEncontrado =
+              errorEncontrado +
+              "\n Error en la clase principal, linea: " +
+              tablaDeSimbolos[i].linea;
+            errorSintactico(errorEncontrado);
+            break;
+          } else {
+            console.log("Clase principal correcta");
+            console.log(tablaDeFunciones);
+            i = nuevai - 1;
+            continue;
+          }
         } else {
-          console.log("Clase principal correcta");
-          console.log(tablaDeVariables);
-          i = nuevai;
+          errorEncontrado =
+            "Ya existe la clase principal, no se puede declarar otra. Error en linea: " +
+            tablaDeSimbolos[i].linea;
+          errorSintactico(errorEncontrado);
         }
-      } else {
-        errorEncontrado = "No existe la clase principal";
       }
       //!Comprueba si existe variabili en la tabla de simbolos
       if (tablaDeSimbolos[i].opCode == "iVar") {
-        const [evaluaVariables, nuevai] = variabili(tablaDeSimbolos, i);
+        if (!buscarEnTablaDeFunciones("Variables")) {
+          const [evaluaVariables, nuevai] = variabili(tablaDeSimbolos, i);
+          if (evaluaVariables == false) {
+            errorEncontrado =
+              errorEncontrado +
+              "\n Error en la declaracion de variables, linea: " +
+              tablaDeSimbolos[i].linea;
+            errorSintactico(errorEncontrado);
+            break;
+          } else {
+            console.log("Variables correctas");
+            console.log(tablaDeFunciones);
+            i = nuevai - 1;
+            continue;
+          }
+        } else {
+          errorEncontrado =
+            "Ya existe la clase variabili, no se puede declarar otra. Error en la linea: " +
+            tablaDeSimbolos[i].linea;
+          errorSintactico(errorEncontrado);
+        }
+      }
+      //!Comprueba si se crean variables en la subclase variabili
+      if (
+        tablaDeSimbolos[i].opCode == "tdT" ||
+        tablaDeSimbolos[i].opCode == "tdP" ||
+        tablaDeSimbolos[i].opCode == "tdC" ||
+        tablaDeSimbolos[i].opCode == "tdB"
+      ) {
+        const [evaluaVariables, nuevai] = declaracionVariables(
+          tablaDeSimbolos,
+          i
+        );
         if (evaluaVariables == false) {
           errorEncontrado =
             errorEncontrado +
             "\n Error en la declaracion de variables, linea: " +
             tablaDeSimbolos[i].linea;
-          console.error(errorEncontrado);
           errorSintactico(errorEncontrado);
           break;
         } else {
-          console.log("Variables correctas");
+          console.log("Declaracion de variables correctas");
           console.log(tablaDeVariables);
-          i = nuevai;
+          i = nuevai - 1;
+          continue;
         }
       }
     }
@@ -64,9 +98,7 @@ function mainSintactico() {
 }
 
 //!Funcion para testeo-- HTML boton "Prueba"
-function test() {
-  
-}
+function test() {}
 
 //!Funcion para mandar errores a la consola de html
 function errorSintactico(error) {
@@ -76,13 +108,14 @@ function errorSintactico(error) {
   document.getElementById("erroresSintacticos").style.fontWeight = "bold";
   //Envia el texto de errorEncontrado al textarea en el html con el id 'erroresSintacticos'
   document.getElementById("erroresSintacticos").value = error;
+  console.error(error);
 }
 
 //Busquedas en la tabla de variables, para ver si existe una variable con el mismo nombre o no exite ninguna
-function buscarEnTablaDeVariables(nombre) {
-  if (tablaDeVariables.length > 0) {
-    for (var i = 0; i < tablaDeVariables.length; i++) {
-      if (tablaDeVariables[i].tipo == nombre) {
+function buscarEnTablaDeFunciones(nombre) {
+  if (tablaDeFunciones.length > 0) {
+    for (var i = 0; i < tablaDeFunciones.length; i++) {
+      if (tablaDeFunciones[i].tipo == nombre) {
         return true;
       }
     }
@@ -124,7 +157,7 @@ function clasePrincipal(OrigenOPcode, pos) {
               i++;
               if (OrigenOPcode[i].opCode == "io") {
                 i++;
-                construirTablaDeVariables(
+                construirTablaDeFunciones(
                   linea,
                   columna,
                   tipo,
@@ -193,7 +226,7 @@ function variabili(OrigenOPcode, pos) {
           i++;
           if (OrigenOPcode[i].opCode == "io") {
             i++;
-            construirTablaDeVariables(
+            construirTablaDeFunciones(
               linea,
               columna,
               tipo,
@@ -223,10 +256,221 @@ function variabili(OrigenOPcode, pos) {
   }
 }
 
+//!Metodo para comprobar la construccion de variables de nuestro programa dentro de la subclase variabili
+function declaracionVariables(origenOPcode, pos) {
+  console.log(
+    "Entro a declaracion de variables con el parametro: " +
+      origenOPcode[pos].opCode
+  );
+  //Verificar el caso a aplicar mediante el opCode Recibido
+  let caso;
+  //Caso 1: Para variables de tipo entero o flotante
+  if (origenOPcode[pos].opCode == "tdT" || origenOPcode[pos].opCode == "tdP") caso = 1;
+  //Caso 2: Para variables de tipo String
+  if (origenOPcode[pos].opCode == "tdC") caso = 2;
+  //Caso 3: Para variables de tipo booleano
+  if (origenOPcode[pos].opCode == "tdB") caso = 3;
+    
+  let linea = origenOPcode[pos].linea;
+  let nombreVariable;
+  let palabraReservada = tipoDeDato(origenOPcode[pos].opCode);
+  let valor = 0;
+  console.log("Caso: " + caso);
+  switch (caso) {
+    case 1:
+      //Caso para declarar variable entera o flotante
+      pos++;
+      if (origenOPcode[pos].opCode == "nVar") {
+        nombreVariable = origenOPcode[pos].token;
+        pos++;
+        if (origenOPcode[pos].opCode == "asig=") {
+          pos++;
+          console.log(origenOPcode[pos].opCode + " " + palabraReservada);
+          const [booleano, nuevai, exprecionEvaluada] = aritLogic(
+            origenOPcode,
+            pos
+          );
+          if (booleano == true) {
+            console.log("Valor de la exprecion: " + exprecionEvaluada);
+            pos = nuevai;
+            valor = exprecionEvaluada;
+            console.log("Valor de la variable: " + valor);
+            if (palabraReservada == "numE") {
+              if (Number.isInteger(valor)) {
+                construirTablaDeVariables(
+                  linea,
+                  palabraReservada,
+                  nombreVariable,
+                  valor
+                );
+                return [true, pos];
+              } else {
+                errorEncontrado =
+                  errorEncontrado +
+                  "Error en la declaracion de variables, el valor obtenido despues de la evaluacion aritmetica no es un entero. Se esperaba un entero.";
+              }
+            } else {
+              construirTablaDeVariables(
+                linea,
+                palabraReservada,
+                nombreVariable,
+                valor
+              );
+              return [true, pos];
+            }
+          } else {
+            errorEncontrado =
+              errorEncontrado +
+              "Error al evaluar la exprecion matematica que va a asignar a la variable. Si tu expresion esta bien, asegurate de haber terminado de declarar al sentecia con '?'";
+            return [false, pos];
+          }
+        } else if (origenOPcode[pos].opCode == "fin?") {
+          pos++;
+          construirTablaDeVariables(
+            linea,
+            palabraReservada,
+            nombreVariable,
+            0
+          );
+          return [true, pos];
+        } else {
+          errorEncontrado =
+            errorEncontrado +
+            "Se esperaba el operador de asignacion para inicializar la variable. O en todo caso el final de la sentencia con el operador: '?' ";
+          return [false, pos + 1];
+        }
+      } else {
+        errorEncontrado =
+          errorEncontrado +
+          "Se esperaba el nombre de variable despues de el tipo de dato 'totale'";
+        return [false, pos];
+      }
+      break;
+    case 2:
+      //Caso para declarar variable de tipo String
+      pos++;
+      if (origenOPcode[pos].opCode == "nVar") {
+        nombreVariable = origenOPcode[pos].token;
+        pos++;
+        if (origenOPcode[pos].opCode == "asig=") {
+          pos++;
+          if (origenOPcode[pos].opCode == "cad") {
+            valor = origenOPcode[pos].token;
+            pos++;
+            if (origenOPcode[pos].opCode == "fin?") {
+              pos++;
+              construirTablaDeVariables(
+                linea,
+                palabraReservada,
+                nombreVariable,
+                valor
+              );
+              return [true, pos];
+            } else {
+              errorEncontrado = errorEncontrado + "Error en la sentencia, no se encontro '?' despues de la cadena";
+              return [false, pos];
+            }
+          } else {
+            errorEncontrado = errorEncontrado + "Error en la sentencia, se esperaba una cadena despues de la asignacion a un tipo de dato catena (string)";
+            return [false, pos];
+          }
+        } else if (origenOPcode[pos].opCode == "fin?") {
+          pos++;
+          construirTablaDeVariables(
+            linea,
+            palabraReservada,
+            nombreVariable,
+            ""
+          );
+          return [true, pos];
+        } else {
+          errorEncontrado =
+            errorEncontrado +
+            "Se esperaba el operador de asignacion para inicializar la variable. O en todo caso el final de la sentencia con el operador: '?' ";
+          return [false, pos + 1];
+        }
+      } else {
+        errorEncontrado = errorEncontrado + "Error en la sentencia, se esperaba el nombre de variable despues de el tipo de dato 'catena'";
+        return [false, pos];
+      }
+      break;
+    case 3:
+      //Caso para declarar variable de tipo booleano
+      pos++;
+      if (origenOPcode[pos].opCode == "nVar") {
+        nombreVariable = origenOPcode[pos].token;
+        pos++;
+        if (origenOPcode[pos].opCode == "asig=") {
+          pos++;
+          if (origenOPcode[pos].opCode == "tdF" || origenOPcode[pos].opCode == "tdV") {
+            valor = origenOPcode[pos].token;
+            pos++;
+            if (origenOPcode[pos].opCode == "fin?") {
+              pos++;
+              construirTablaDeVariables(
+                linea,
+                palabraReservada,
+                nombreVariable,
+                valor
+              );
+              return [true, pos];
+            } else {
+              errorEncontrado = errorEncontrado + "Error en la sentencia, no se encontro '?' despues del tipo de dato 'bool'";
+              return [false, pos];
+            }
+          } else {
+            errorEncontrado = errorEncontrado + "Error en la sentencia, se esperaba un tipo de dato 'booleano' despues de la asignacion a un tipo de dato 'bool'";
+            return [false, pos];
+          }
+        } else if (origenOPcode[pos].opCode == "fin?") {
+          pos++;
+          construirTablaDeVariables(
+            linea,
+            palabraReservada,
+            nombreVariable,
+            "IMPOSTORE"
+          );
+          return [true, pos];
+        } else {
+          errorEncontrado =
+            errorEncontrado + "Se esperaba el operador de asignacion para inicializar la variable. O en todo caso el final de la sentencia con el operador: '?' ";
+          return [false, pos];
+        }
+      } else {
+        errorEncontrado = errorEncontrado + "Error en la sentencia, se esperaba el nombre de variable despues de el tipo de dato 'bool'";
+        return [false, pos];
+      }
+
+    default:
+      break;
+  }
+  return [false, pos + 1];
+}
+
+//Metodo que retorna el tipo de dato de un opCode
+function tipoDeDato(opCode) {
+  let tipoDeDato = "Indefinido";
+  if (opCode == "tdT") tipoDeDato = "numE";
+  if (opCode == "tdP") tipoDeDato = "numF";
+  if (opCode == "tdC") tipoDeDato = "cad";
+  if (opCode == "tdB") tipoDeDato = "boo";
+  return tipoDeDato;
+}
+
 //Metodo para construir los objetos de la tabla de variables
-function construirTablaDeVariables(_linea, _columna, _tipo, _nombre, _valor) {
+function construirTablaDeVariables(_linea, _tipo, _nombre, _valor) {
   //insertamos un nuevo objeto en la tabla de variables
   tablaDeVariables.push({
+    linea: _linea,
+    tipo: _tipo,
+    nombre: _nombre,
+    valor: _valor,
+  });
+}
+//Metodo para construir los objetos de la tabla de funciones
+function construirTablaDeFunciones(_linea, _columna, _tipo, _nombre, _valor) {
+  //insertamos un nuevo objeto en la tabla de variables
+  tablaDeFunciones.push({
     linea: _linea,
     columna: _columna,
     tipo: _tipo,
@@ -291,20 +535,27 @@ function aritLogic(OrigenOPcode, i) {
   //   i++;
   // }
   //Mientras el origenOPcode.opCode sea diferente de "sep," y sea diferente de "rp:" guardar la concatenacion de los valores en la variable evaluacionAritmetica.
-  while (OrigenOPcode[i].opCode != "sep," && OrigenOPcode[i].opCode != "rp:") {
+  while (
+    OrigenOPcode[i].opCode != "sep," &&
+    OrigenOPcode[i].opCode != "rp:" &&
+    OrigenOPcode[i].opCode != "fin?"
+  ) {
     exprecion = exprecion + OrigenOPcode[i].token;
     i++;
   }
   //Guardamos la exprecion original para poder evaluarla despues
   exprecionOriginal = exprecion;
-
+  //console.log("Exprecion original: " + exprecionOriginal);
   //!Hasta este momento tenemos una exprecion cruda, tal que '5+5', se convertira en 'e+e' para ser evaluada
   //Eliminar puntos decimales de la exprecion
   exprecion = exprecion.replace(/\./g, "");
   //Remplazar los numeros con la letra 'e'
   exprecion = exprecion.replace(/[0-9]+/g, "e");
   if (evaluarExprecion(exprecion) == false) {
-    errorEncontrado = errorEncontrado + "\nExprecion matematica mal escrita: "+exprecionOriginal;
+    errorEncontrado =
+      errorEncontrado +
+      "\nExprecion matematica mal escrita: " +
+      exprecionOriginal;
     return [false, i, exprecionOriginal];
   } else {
     return [true, i, eval(exprecionOriginal)];

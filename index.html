@@ -35,7 +35,7 @@
 
 </head>
 
-<body onload="clearErrorConsole()">
+<body onload="limpiarFlujoDeTrabajo()">
   <h1>Analizador Lexico</h1>
   <div class="container">
     <textarea class="form-control textArea" id="input" placeholder="Codigo a analizar" rows="10" cols="100" wrap="soft">
@@ -81,6 +81,7 @@
         <button type="button" class="btn btn-dark" onclick="mainLexico()">Lexico</button>
         <button type="button" class="btn btn-dark" onclick="mainSintactico()">Sintactico</button>
         <button type="button" class="btn btn-dark" onclick="test()">Prueba</button>
+        <button type="button" class="btn btn-dark" onclick="limpiarFlujoDeTrabajo()">Limpiar</button>
       </div>
       <div class="erroresSintacticos" style="width: 100%;">
         <h1>Errores Sintacticos</h1>

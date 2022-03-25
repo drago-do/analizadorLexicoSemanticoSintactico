@@ -724,13 +724,12 @@ function cleanTables() {
     simbolos.deleteRow(srowCount - i);
     i++;
   }
-
 }
 
 //funcion principal que llama a todas las funciones
 function mainLexico() {
   //Limpiamos la tabla de simbolos y de datos
-  cleanTables();
+  limpiarFlujoDeTrabajo();
   tablaDeSimbolos = [];
   numberOfLines = 0;
   //Recuperamos el texto del editor
