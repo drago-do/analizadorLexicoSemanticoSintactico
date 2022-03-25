@@ -108,16 +108,16 @@ function tokenConstructor(lineasCodigo) {
       }
 
       //!Si existe la palabra reservada fine_classe, entonces se refiere a el termino de una clase
-      if (lineasCodigo[i].substring(j, j + 11) == "fine_classe") {
+      if (lineasCodigo[i].substring(j, j + 12) == "~fine_classe") {
         //Guardamos la palabra reservada en nuestra tabla de simbolos
         construirTablaDeSimbolos(
           i + 1,
           j + 1,
           "palabra reservada",
-          "fine_classe",
+          "~fine_classe",
           "fc"
         );
-        j = j + 10;
+        j = j + 11;
         continue;
       }
 
@@ -148,24 +148,23 @@ function tokenConstructor(lineasCodigo) {
         continue;
       }
       //!Si existe la palabra reservada fine, entonces se refiere a el termino de declaracion de variables, funciones, etc
-      if (lineasCodigo[i].substring(j, j + 4) == "fine") {
+      if (lineasCodigo[i].substring(j, j + 5) == "~fine") {
         //Guardamos la palabra reservada en nuestra tabla de simbolos
         construirTablaDeSimbolos(
           i + 1,
           j + 1,
           "palabra reservada",
-          "fine",
+          "~fine",
           "fcm"
         );
-        j = j + 3;
+        j = j + 4;
         continue;
       }
 
       //!Si se encuentra el caracter f y, este indicara los ciclos de un for
       if (
         lineasCodigo[i].substring(j, j + 1) == "f" &&
-        lineasCodigo[i].substring(j + 1, j + 2) !=
-          /[a-zA-Z]/.test(lineasCodigo[i].charAt(j + 1))
+        lineasCodigo[i].substring(j + 1, j + 2) == "&"
       ) {
         //Guardamos la palabra reservada en nuestra tabla de simbolos
         construirTablaDeSimbolos(

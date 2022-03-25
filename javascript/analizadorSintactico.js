@@ -2,11 +2,6 @@
 //Language: javascript
 //Variables Globales para trabajar nuestro lenguaje de programacion
 let errorEncontrado = "";
-var profundidad = 0;
-//Profundidad 1 = Nunca se cerro la clase principal
-//Profundidad 2 = Nunca se cerro la parte de variables, metodos, principale_inizio, etc
-//Profundidad 3 = Nunca se cerro la parte de estructuras de control if, for, while, etc
-//Profundidad n+ = Nunca se cerro la parte de estructuras de control anidadas
 
 function mainSintactico() {
   //Comprueba si la tabla de simbolos esta vacia
@@ -15,53 +10,39 @@ function mainSintactico() {
     for (var i = 0; i < tablaDeSimbolos.length; i++) {
       //!Comprueba si existe classe en la tabla de simbolos
       if (tablaDeSimbolos[i].opCode == "c") {
-        if (!buscarEnTablaDeFunciones("Clase Principal")) {
-          const [evaluaClasePrincipal, nuevai] = clasePrincipal(
-            tablaDeSimbolos,
-            i
-          );
-          if (evaluaClasePrincipal == false) {
-            errorEncontrado =
-              errorEncontrado +
-              "\n Error en la clase principal, linea: " +
-              tablaDeSimbolos[i].linea;
-            errorSintactico(errorEncontrado);
-            break;
-          } else {
-            console.log("Clase principal correcta");
-            console.log(tablaDeFunciones);
-            i = nuevai - 1;
-            continue;
-          }
-        } else {
+        const [evaluaClasePrincipal, nuevai] = clasePrincipal(
+          tablaDeSimbolos,
+          i
+        );
+        if (evaluaClasePrincipal == false) {
           errorEncontrado =
-            "Ya existe la clase principal, no se puede declarar otra. Error en linea: " +
+            errorEncontrado +
+            "\n Error en la clase principal, linea: " +
             tablaDeSimbolos[i].linea;
           errorSintactico(errorEncontrado);
+          break;
+        } else {
+          //console.log("Clase principal correcta");
+          //console.log(tablaDeFunciones);
+          i = nuevai - 1;
+          continue;
         }
       }
       //!Comprueba si existe variabili en la tabla de simbolos
       if (tablaDeSimbolos[i].opCode == "iVar") {
-        if (!buscarEnTablaDeFunciones("Variables")) {
-          const [evaluaVariables, nuevai] = variabili(tablaDeSimbolos, i);
-          if (evaluaVariables == false) {
-            errorEncontrado =
-              errorEncontrado +
-              "\n Error en la declaracion de variables, linea: " +
-              tablaDeSimbolos[i].linea;
-            errorSintactico(errorEncontrado);
-            break;
-          } else {
-            console.log("Variables correctas");
-            console.log(tablaDeFunciones);
-            i = nuevai - 1;
-            continue;
-          }
-        } else {
+        const [evaluaVariables, nuevai] = variabili(tablaDeSimbolos, i);
+        if (evaluaVariables == false) {
           errorEncontrado =
-            "Ya existe la clase variabili, no se puede declarar otra. Error en la linea: " +
+            errorEncontrado +
+            "\n Error en la declaracion de variables, linea: " +
             tablaDeSimbolos[i].linea;
           errorSintactico(errorEncontrado);
+          break;
+        } else {
+          //console.log("Variabili correctas");
+          //console.log(tablaDeFunciones);
+          i = nuevai - 1;
+          continue;
         }
       }
       //!Comprueba si se crean variables en la subclase variabili
@@ -83,12 +64,60 @@ function mainSintactico() {
           errorSintactico(errorEncontrado);
           break;
         } else {
-          console.log("Declaracion de variables correctas");
-          console.log(tablaDeVariables);
+          //console.log("Declaracion de variables correctas");
+          //console.log(tablaDeVariables);
           i = nuevai - 1;
           continue;
         }
       }
+      //!Comprueba si se crea principale_inizio dentro de la clase principal
+      if (tablaDeSimbolos[i].opCode == "cmi") {
+        const [evaluaPrincipale_inizio, nuevai] = principale_inizio(
+          tablaDeSimbolos,
+          i
+        );
+        if (evaluaPrincipale_inizio == false) {
+          errorEncontrado =
+            errorEncontrado +
+            "\n Error en la linea: " +
+            tablaDeSimbolos[i].linea;
+          errorSintactico(errorEncontrado);
+          break;
+        } else {
+          //console.log("Principale_inizio correcto");
+          console.log(tablaDeFunciones);
+          i = nuevai - 1;
+          continue;
+        }
+      }
+
+      //!Comprueba si existe el cierre de una subclase, classe_principale o metodo
+      if (tablaDeSimbolos[i].opCode == "fcm") {
+        if (!cierreDeFuncion(tablaDeFunciones, tablaDeSimbolos[i].linea)) {
+          errorEncontrado =
+            errorEncontrado +
+            "\n Error en la linea: " +
+            tablaDeSimbolos[i].linea;
+          errorSintactico(errorEncontrado);
+          break;
+        }
+      }
+      //!Comprueba si existe el cierre de classe
+      if (tablaDeSimbolos[i].opCode == "fc") {
+        if (!cierreDeClase(tablaDeFunciones, tablaDeSimbolos[i].linea)) {
+          errorEncontrado =
+            errorEncontrado +
+            "\n Error en la linea: " +
+            tablaDeSimbolos[i].linea;
+          errorSintactico(errorEncontrado);
+          break;
+        }
+      }
+      //!Para ver el seguimiento de la ejecucion del analizador sintactico
+        console.log("Tabla de funciones: ");
+        console.log(tablaDeFunciones);
+        console.log("Tabla de variables: ");
+        console.log(tablaDeVariables);
     }
   } else {
     alert(
@@ -111,16 +140,48 @@ function errorSintactico(error) {
   console.error(error);
 }
 
-//Busquedas en la tabla de variables, para ver si existe una variable con el mismo nombre o no exite ninguna
+//Funcion para rescatar la ultima posicion de la tabla de la tabla de funciones y modificar un valor (cierre de funcion)
+function cierreDeFuncion(tablaFunciones, lineaDeCierre) {
+  let posicion = tablaFunciones.length - 1;
+  if (!tablaFunciones[posicion].cierre) {
+    tablaFunciones[posicion].cierre = lineaDeCierre;
+    return true;
+  } else {
+    errorEncontrado =
+      errorEncontrado +
+      "No se puede cerrar la funcion '" +
+      tablaFunciones[posicion].nombre +
+      "', esta ya fue cerrada anteriormente.";
+    return false;
+  }
+}
+//Funcion para rescatar la primera posicion de la tabla de funciones y modificar un valor (cierre de classe)
+function cierreDeClase(tablaFunciones, lineaDeCierre) {
+  let posicion = 0;
+  if (!tablaFunciones[posicion].cierre) {
+    tablaFunciones[posicion].cierre = lineaDeCierre;
+    return true;
+  } else {
+    errorEncontrado =
+      errorEncontrado +
+      "No se puede cerrar la clase, esta ya fue cerrada anteriormente." +
+      tablaFunciones[posicion].cierre;
+    return false;
+  }
+}
+
+//Busquedas en la tabla de funciones, para ver si existe una funciones con el mismo nombre o no exite ninguna
 function buscarEnTablaDeFunciones(nombre) {
   if (tablaDeFunciones.length > 0) {
     for (var i = 0; i < tablaDeFunciones.length; i++) {
       if (tablaDeFunciones[i].tipo == nombre) {
-        return true;
+        let linea = tablaDeFunciones[i].linea;
+        let cierre = tablaDeFunciones[i].cierre;
+        return [true, linea, cierre];
       }
     }
   }
-  return false;
+  return [false, 0, 0];
 }
 
 //!Metodo para comprobar la construccion de la clase base de nuestro programa
@@ -128,7 +189,6 @@ function clasePrincipal(OrigenOPcode, pos) {
   let argumentosDeClasePrincipal = [];
   for (i = pos; i < OrigenOPcode.length; i++) {
     if (OrigenOPcode[i].opCode == "c") {
-      profundidad++;
       i++;
       let linea = OrigenOPcode[i].linea;
       let columna = OrigenOPcode[i].columna;
@@ -162,7 +222,8 @@ function clasePrincipal(OrigenOPcode, pos) {
                   columna,
                   tipo,
                   nombre,
-                  argumentosDeClasePrincipal
+                  argumentosDeClasePrincipal,
+                  false
                 );
                 return [true, i];
               } else {
@@ -197,85 +258,181 @@ function clasePrincipal(OrigenOPcode, pos) {
 }
 
 //!Metodo para comprobar la construccion de variabili de nuestro programa
-function variabili(OrigenOPcode, pos) {
-  let argumentosDeVariables = [];
-  for (i = pos; i < OrigenOPcode.length; i++) {
-    if (OrigenOPcode[i].opCode == "iVar") {
-      let linea = OrigenOPcode[i].linea;
-      let columna = OrigenOPcode[i].columna;
-      let tipo = "Variables";
-      let nombre = OrigenOPcode[i].token;
-      profundidad++;
-      i++;
-      if (OrigenOPcode[i].opCode == "rp:") {
+function variabili(OrigenOPcode, i) {
+  //Verifica mediante los valores que retorna el metodo 'buscarEnTablaDeFunciones' si existe la clase principal y si la linea en la que se declaro es menor a la linea en la que se encuentra variabili, y si su valor de cierre es false. Si es asi ejecuta el codigo de la funcion.
+  let [existePrincipal, linea, cierre] =
+    buscarEnTablaDeFunciones("Clase Principal");
+  let [existeVariabili, linea_inizio, cierre_inizio] =
+    buscarEnTablaDeFunciones("Variables");
+  if (existeVariabili == false) {
+    if (
+      (existePrincipal == true &&
+        linea < OrigenOPcode[i].linea &&
+        cierre == false) ||
+      cierre > OrigenOPcode[i].linea
+    ) {
+      let argumentosDeVariables = [];
+      if (OrigenOPcode[i].opCode == "iVar") {
+        let linea = OrigenOPcode[i].linea;
+        let columna = OrigenOPcode[i].columna;
+        let tipo = "Variables";
+        let nombre = OrigenOPcode[i].token;
         i++;
-        //Recuperar los argumentos de variabili
-        const [evaluaArgumentos, argumentos, nuevai] =
-          construirTablaDeArgumentos(OrigenOPcode, i);
-        if (evaluaArgumentos == true) {
-          i = nuevai;
-          argumentosDeVariables = argumentos;
-          //console.log(argumentosDeVariables);
-        } else {
-          errorEncontrado =
-            errorEncontrado +
-            "\n Error en los argumentos de la declaracion de variables";
-          return [false, i];
-        }
         if (OrigenOPcode[i].opCode == "rp:") {
           i++;
-          if (OrigenOPcode[i].opCode == "io") {
-            i++;
-            construirTablaDeFunciones(
-              linea,
-              columna,
-              tipo,
-              nombre,
-              argumentosDeVariables
-            );
-            return [true, i];
+          //Recuperar los argumentos de variabili
+          const [evaluaArgumentos, argumentos, nuevai] =
+            construirTablaDeArgumentos(OrigenOPcode, i);
+          if (evaluaArgumentos == true) {
+            i = nuevai;
+            argumentosDeVariables = argumentos;
+            //console.log(argumentosDeVariables);
           } else {
             errorEncontrado =
-              "Falta el caracter '~' de apertura de declaracion de variables";
+              errorEncontrado +
+              "\n Error en los argumentos de la declaracion de variables";
+            return [false, i];
+          }
+          if (OrigenOPcode[i].opCode == "rp:") {
+            i++;
+            if (OrigenOPcode[i].opCode == "io") {
+              i++;
+              construirTablaDeFunciones(
+                linea,
+                columna,
+                tipo,
+                nombre,
+                argumentosDeVariables,
+                false
+              );
+              return [true, i];
+            } else {
+              errorEncontrado =
+                "Falta el caracter '~' de apertura de declaracion de variables";
+              return [false, i];
+            }
+          } else {
+            errorEncontrado =
+              "Falta el caracter 'dos puntos' de cierre de declaracion de variables";
             return [false, i];
           }
         } else {
           errorEncontrado =
-            "Falta el caracter 'dos puntos' de cierre de declaracion de variables";
+            "Faltan el caracter 'dos puntos' de apertura para declaracion de variables";
           return [false, i];
         }
       } else {
-        errorEncontrado =
-          "Faltan el caracter 'dos puntos' de apertura para declaracion de variables";
+        errorEncontrado = "Palabra reserva: 'variabili' no encontrada.";
         return [false, i];
       }
     } else {
-      errorEncontrado = "Palabra reserva: 'variabili' no encontrada.";
+      errorEncontrado =
+        "No se puede declarar variables fuera de la clase principal";
       return [false, i];
     }
+  } else {
+    errorEncontrado = "Ya existe una declaracion de variables";
+    return [false, i];
+  }
+}
+
+//!Metodo para comprobar la construccion de principale_inizio de nuestro programa dentro de la clase principal
+function principale_inizio(OrigenOPcode, pos) {
+  //Verifica mediante los valores que retorna el metodo 'buscarEnTablaDeFunciones' si existe la clase principal y si la linea en la que se declaro es menor a la linea en la que se encuentra el principale_inizio, y si su valor de cierre es false. Si es asi ejecuta el codigo de la funcion.
+  let [existePrincipal, linea, cierre] =
+    buscarEnTablaDeFunciones("Clase Principal");
+  let [existePrincipal_inizio, linea_inizio, cierre_inizio] =
+    buscarEnTablaDeFunciones("principale_inizio");
+  if (existePrincipal_inizio == false) {
+    if (
+      (existePrincipal == true &&
+        linea < OrigenOPcode[pos].linea &&
+        cierre == false) ||
+      cierre > OrigenOPcode[i].linea
+    ) {
+      let argumentosDePrincipale_inizio = [];
+      if (OrigenOPcode[pos].opCode == "cmi") {
+        let linea = OrigenOPcode[pos].linea;
+        let columna = OrigenOPcode[pos].columna;
+        let tipo = "principale_inizio";
+        let nombre = OrigenOPcode[pos].token;
+        pos++;
+        if (OrigenOPcode[pos].opCode == "rp:") {
+          pos++;
+          //Recuperar los argumentos de principale_inizio
+          const [evaluaArgumentos, argumentos, nuevai] =
+            construirTablaDeArgumentos(OrigenOPcode, pos);
+          if (evaluaArgumentos == true) {
+            pos = nuevai;
+            argumentosDePrincipale_inizio = argumentos;
+            //console.log(argumentosDePrincipale_inizio);
+          } else {
+            errorEncontrado =
+              errorEncontrado +
+              "\n Error en los argumentos de principale_inizio";
+            return [false, pos];
+          }
+          if (OrigenOPcode[pos].opCode == "rp:") {
+            pos++;
+            if (OrigenOPcode[pos].opCode == "io") {
+              pos++;
+              construirTablaDeFunciones(
+                linea,
+                columna,
+                tipo,
+                nombre,
+                argumentosDePrincipale_inizio,
+                false
+              );
+              return [true, pos];
+            } else {
+              errorEncontrado =
+                "Falta el caracter '~' de apertura de principale_inizio";
+              return [false, pos];
+            }
+          } else {
+            errorEncontrado =
+              "Falta el caracter 'dos puntos' de cierre de principale_inizio";
+            return [false, pos];
+          }
+        } else {
+          errorEncontrado =
+            "Faltan el caracter 'dos puntos' de apertura para principale_inizio";
+          return [false, pos];
+        }
+      } else {
+        errorEncontradoo =
+          "Palabra reserva: 'principale_inizio' no encontrada.";
+        return [false, pos];
+      }
+    } else {
+      errorEncontrado =
+        "No se encontro la clase principal. No puedes declarar principale_inizio fuera de la clase principal.";
+      return [false, pos];
+    }
+  } else {
+    errorEncontrado =
+      "Ya se declaro principale_inizio, solo puede existir una vez.";
+    return [false, pos];
   }
 }
 
 //!Metodo para comprobar la construccion de variables de nuestro programa dentro de la subclase variabili
 function declaracionVariables(origenOPcode, pos) {
-  console.log(
-    "Entro a declaracion de variables con el parametro: " +
-      origenOPcode[pos].opCode
-  );
   //Verificar el caso a aplicar mediante el opCode Recibido
   let caso;
   //Caso 1: Para variables de tipo entero o flotante
-  if (origenOPcode[pos].opCode == "tdT" || origenOPcode[pos].opCode == "tdP") caso = 1;
+  if (origenOPcode[pos].opCode == "tdT" || origenOPcode[pos].opCode == "tdP")
+    caso = 1;
   //Caso 2: Para variables de tipo String
   if (origenOPcode[pos].opCode == "tdC") caso = 2;
   //Caso 3: Para variables de tipo booleano
   if (origenOPcode[pos].opCode == "tdB") caso = 3;
-    
+
   let linea = origenOPcode[pos].linea;
   let nombreVariable;
   let palabraReservada = tipoDeDato(origenOPcode[pos].opCode);
   let valor = 0;
-  console.log("Caso: " + caso);
   switch (caso) {
     case 1:
       //Caso para declarar variable entera o flotante
@@ -285,16 +442,13 @@ function declaracionVariables(origenOPcode, pos) {
         pos++;
         if (origenOPcode[pos].opCode == "asig=") {
           pos++;
-          console.log(origenOPcode[pos].opCode + " " + palabraReservada);
           const [booleano, nuevai, exprecionEvaluada] = aritLogic(
             origenOPcode,
             pos
           );
           if (booleano == true) {
-            console.log("Valor de la exprecion: " + exprecionEvaluada);
             pos = nuevai;
             valor = exprecionEvaluada;
-            console.log("Valor de la variable: " + valor);
             if (palabraReservada == "numE") {
               if (Number.isInteger(valor)) {
                 construirTablaDeVariables(
@@ -326,12 +480,7 @@ function declaracionVariables(origenOPcode, pos) {
           }
         } else if (origenOPcode[pos].opCode == "fin?") {
           pos++;
-          construirTablaDeVariables(
-            linea,
-            palabraReservada,
-            nombreVariable,
-            0
-          );
+          construirTablaDeVariables(linea, palabraReservada, nombreVariable, 0);
           return [true, pos];
         } else {
           errorEncontrado =
@@ -367,11 +516,15 @@ function declaracionVariables(origenOPcode, pos) {
               );
               return [true, pos];
             } else {
-              errorEncontrado = errorEncontrado + "Error en la sentencia, no se encontro '?' despues de la cadena";
+              errorEncontrado =
+                errorEncontrado +
+                "Error en la sentencia, no se encontro '?' despues de la cadena";
               return [false, pos];
             }
           } else {
-            errorEncontrado = errorEncontrado + "Error en la sentencia, se esperaba una cadena despues de la asignacion a un tipo de dato catena (string)";
+            errorEncontrado =
+              errorEncontrado +
+              "Error en la sentencia, se esperaba una cadena despues de la asignacion a un tipo de dato catena (string)";
             return [false, pos];
           }
         } else if (origenOPcode[pos].opCode == "fin?") {
@@ -390,7 +543,9 @@ function declaracionVariables(origenOPcode, pos) {
           return [false, pos + 1];
         }
       } else {
-        errorEncontrado = errorEncontrado + "Error en la sentencia, se esperaba el nombre de variable despues de el tipo de dato 'catena'";
+        errorEncontrado =
+          errorEncontrado +
+          "Error en la sentencia, se esperaba el nombre de variable despues de el tipo de dato 'catena'";
         return [false, pos];
       }
       break;
@@ -402,7 +557,10 @@ function declaracionVariables(origenOPcode, pos) {
         pos++;
         if (origenOPcode[pos].opCode == "asig=") {
           pos++;
-          if (origenOPcode[pos].opCode == "tdF" || origenOPcode[pos].opCode == "tdV") {
+          if (
+            origenOPcode[pos].opCode == "tdF" ||
+            origenOPcode[pos].opCode == "tdV"
+          ) {
             valor = origenOPcode[pos].token;
             pos++;
             if (origenOPcode[pos].opCode == "fin?") {
@@ -415,11 +573,15 @@ function declaracionVariables(origenOPcode, pos) {
               );
               return [true, pos];
             } else {
-              errorEncontrado = errorEncontrado + "Error en la sentencia, no se encontro '?' despues del tipo de dato 'bool'";
+              errorEncontrado =
+                errorEncontrado +
+                "Error en la sentencia, no se encontro '?' despues del tipo de dato 'bool'";
               return [false, pos];
             }
           } else {
-            errorEncontrado = errorEncontrado + "Error en la sentencia, se esperaba un tipo de dato 'booleano' despues de la asignacion a un tipo de dato 'bool'";
+            errorEncontrado =
+              errorEncontrado +
+              "Error en la sentencia, se esperaba un tipo de dato 'booleano' despues de la asignacion a un tipo de dato 'bool'";
             return [false, pos];
           }
         } else if (origenOPcode[pos].opCode == "fin?") {
@@ -433,11 +595,14 @@ function declaracionVariables(origenOPcode, pos) {
           return [true, pos];
         } else {
           errorEncontrado =
-            errorEncontrado + "Se esperaba el operador de asignacion para inicializar la variable. O en todo caso el final de la sentencia con el operador: '?' ";
+            errorEncontrado +
+            "Se esperaba el operador de asignacion para inicializar la variable. O en todo caso el final de la sentencia con el operador: '?' ";
           return [false, pos];
         }
       } else {
-        errorEncontrado = errorEncontrado + "Error en la sentencia, se esperaba el nombre de variable despues de el tipo de dato 'bool'";
+        errorEncontrado =
+          errorEncontrado +
+          "Error en la sentencia, se esperaba el nombre de variable despues de el tipo de dato 'bool'";
         return [false, pos];
       }
 
@@ -468,7 +633,14 @@ function construirTablaDeVariables(_linea, _tipo, _nombre, _valor) {
   });
 }
 //Metodo para construir los objetos de la tabla de funciones
-function construirTablaDeFunciones(_linea, _columna, _tipo, _nombre, _valor) {
+function construirTablaDeFunciones(
+  _linea,
+  _columna,
+  _tipo,
+  _nombre,
+  _valor,
+  _cierre
+) {
   //insertamos un nuevo objeto en la tabla de variables
   tablaDeFunciones.push({
     linea: _linea,
@@ -476,6 +648,7 @@ function construirTablaDeFunciones(_linea, _columna, _tipo, _nombre, _valor) {
     tipo: _tipo,
     nombre: _nombre,
     valor: _valor,
+    cierre: _cierre,
   });
 }
 
