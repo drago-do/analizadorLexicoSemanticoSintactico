@@ -268,12 +268,16 @@ function tengoLosPadresCorrectos(tablaDeSimbolos, i) {
             return false;
           }
         } else {
-          errorEncontrado = errorEncontrado + "No se puede declarar un metodo fuera de la clase base.";
+          errorEncontrado =
+            errorEncontrado +
+            "No se puede declarar un metodo fuera de la clase base.";
           return false;
         }
       } else {
-        errorEncontrado = errorEncontrado + "No se puede declarar un metodo sin la existencia de una clase base.";
-        return false
+        errorEncontrado =
+          errorEncontrado +
+          "No se puede declarar un metodo sin la existencia de una clase base.";
+        return false;
       }
       break;
     case 5:
@@ -813,15 +817,22 @@ function comprobarMetodo(OPcode, pos) {
             pos++;
             if (OPcode[pos].opCode == "io") {
               pos++;
+              let [sentencias, nuevai] = construirTablaDeSentencias(
+                OPcode,
+                pos
+              );
+              pos = nuevai;
+              let cierre = OPcode[nuevai].linea;
               construirTablaDeFunciones(
                 linea,
                 columna,
                 tipo,
                 nombreMetodo,
                 argumentosDeMetodo,
-                false
+                cierre, //tal vez que sea nuevai
+                sentencias
               );
-              return [true, pos];
+              return [true, pos+1];
             } else {
               errorEncontrado =
                 "Se esperaba 'io' (~) despues de la sentencia 'ci' (_inizio)";
@@ -830,7 +841,7 @@ function comprobarMetodo(OPcode, pos) {
             errorEncontrado =
               "Se esperaba 'ci' (_inizio) despues de la sentencia 'rp:' (:)";
           }
-        }else{
+        } else {
           errorEncontrado =
             "Se esperaba 'rp:' (:) para el cierre de la declaracion de argumentos del metodo";
         }
@@ -848,6 +859,41 @@ function comprobarMetodo(OPcode, pos) {
       "\nError en la sentencia, el metodo no esta en el lugar correcto";
     return [false, pos];
   }
+}
+
+//!Metodo que rescata las sentencias dentro de un metodo
+function construirTablaDeSentencias(OPcode, pos) {
+  let sentencias = [];
+  let linea = [];
+  let evitarRep;
+  let nuevai = pos;
+  for (pos = pos; pos < OPcode.length; pos++) {
+    nuevai = pos;
+    evitarRep = 0;
+    if (OPcode[pos].opCode != "fcm") {
+      if (OPcode[pos].opCode != "com") {
+        //Mientras el opcode no sea el final de la sentencia recupera las sentencias
+        while (
+          OPcode[pos].opCode != "fin?" &&
+          OPcode[pos].opCode != "io" &&
+          evitarRep < 100 &&
+          OPcode[pos].opCode != "edcFR"
+        ) {
+          console.log("Sentencia:");
+          linea.push(OPcode[pos]);
+          pos++;
+          evitarRep++;
+        }
+        linea.push(OPcode[pos]);
+        sentencias.push(linea);
+        linea = [];
+      }
+    } else {
+      break;
+    }
+  }
+  console.log(sentencias);
+  return [sentencias, nuevai];
 }
 
 //Metodo que retorna el tipo de dato de un opCode
@@ -877,7 +923,8 @@ function construirTablaDeFunciones(
   _tipo,
   _nombre,
   _valor,
-  _cierre
+  _cierre,
+  _sentencias
 ) {
   //insertamos un nuevo objeto en la tabla de variables
   tablaDeFunciones.push({
@@ -887,6 +934,7 @@ function construirTablaDeFunciones(
     nombre: _nombre,
     valor: _valor,
     cierre: _cierre,
+    sentencias: _sentencias,
   });
 }
 
