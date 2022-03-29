@@ -647,7 +647,8 @@ function tokenConstructor(lineasCodigo) {
         lineasCodigo[i].charAt(j) != " " &&
         lineasCodigo[i].charAt(j) != "\t" &&
         lineasCodigo[i].charAt(j) != "\n" &&
-        j < lineasCodigo[i].length
+        j < lineasCodigo[i].length &&
+        lineasCodigo[i].charAt(j) != ""
       ) {
         tokenNoReconocido += lineasCodigo[i][j];
         j++;

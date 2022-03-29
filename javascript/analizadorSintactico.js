@@ -8,6 +8,11 @@ function mainSintactico() {
   if (tablaDeSimbolos.length > 0) {
     //Recorre la tabla de simbolos con un for
     for (var i = 0; i < tablaDeSimbolos.length; i++) {
+      //!Para ver el seguimiento de la ejecucion del analizador sintactico
+      // console.log("Tabla de funciones: ");
+      // console.log(tablaDeFunciones);
+      console.log("Tabla de variables: ");
+      console.log(tablaDeVariables);
       //!Comprueba si existe classe en la tabla de simbolos
       if (tablaDeSimbolos[i].opCode == "c") {
         const [evaluaClasePrincipal, nuevai] = clasePrincipal(
@@ -133,11 +138,26 @@ function mainSintactico() {
         }
         continue;
       }
-      //!Para ver el seguimiento de la ejecucion del analizador sintactico
-      // console.log("Tabla de funciones: ");
-      // console.log(tablaDeFunciones);
-      // console.log("Tabla de variables: ");
-      // console.log(tablaDeVariables);
+      //!Error de pasar caracter  de fin de lineas ?
+      if (tablaDeSimbolos[i].opCode == "fin?") {
+        continue;
+      }
+      //!Error para caracteres no reconocidos
+      if (tablaDeSimbolos[i].opCode == "tokenErr") {
+        errorEncontrado =
+          "Error en la linea: " +
+          tablaDeSimbolos[i].linea +
+          ". Caracter no reconocido o no valido";
+        errorSintactico(errorEncontrado);
+        break;
+      }
+      //!Error para sintaxis incorrecta, cuando el opCode no es reconocido por las condiciones anteriores
+      errorEncontrado =
+        "Error en la linea: " +
+        tablaDeSimbolos[i].linea +
+        ". Sintaxis incorrecta o no reconocida.";
+      errorSintactico(errorEncontrado);
+      break;
     }
   } else {
     alert(
@@ -147,7 +167,9 @@ function mainSintactico() {
 }
 
 //!Funcion para testeo-- HTML boton "Prueba"
-function test() {}
+function test() {
+  sentencias(tablaDeFunciones[tablaDeFunciones.length - 1].sentencias);
+}
 
 //!Funcion para mandar errores a la consola de html
 function errorSintactico(error) {
@@ -203,12 +225,70 @@ function buscarEnTablaDeFunciones(nombre) {
   }
   return [false, 0, 0];
 }
+
+//Busquedas en la tabla de variables, para ver si existe una variable con el mismo nombre o no exite ninguna
+function buscarEnTablaDeVariables(nombre) {
+  if (tablaDeVariables.length > 0) {
+    for (var i = 0; i < tablaDeVariables.length; i++) {
+      if (tablaDeVariables[i].nombre == nombre) {
+        let posicion = i;
+        return [true, posicion];
+      }
+    }
+  }
+  return [false, 0, 0];
+}
+
+function resolverValoresDeVariables(exprecion) {
+  //Recorre la cadena exprecion hasta que encuentre una variable (variables empiezan con $)
+  for (var i = 0; i < exprecion.length; i++) {
+    if (exprecion[i] == "$") {
+      let inicioDeVariable = i;
+      //Si encuentra una variable,recupera el nombre completo con un ciclo while hasta que el nombre de la variable sea diferente de [a-zA-Z0-9]. Despues busca en la tabla de variables
+      let nombre = "";
+      i++;
+      while (/[a-zA-Z0-9]/.test(exprecion[i]) && i < exprecion.length) {
+        nombre = nombre + exprecion[i];
+        i++;
+      }
+      let variable = buscarEnTablaDeVariables("$" + nombre);
+      //Si encuentra la variable, comprueba si es de tipo entero o flotante y la reemplaza por su valor
+      if (variable[0]) {
+        if (
+          tablaDeVariables[variable[1]].tipo == "numE" ||
+          tablaDeVariables[variable[1]].tipo == "numF"
+        ) {
+          exprecion =
+            exprecion.substring(0, inicioDeVariable) +
+            tablaDeVariables[variable[1]].valor +
+            exprecion.substring(i, exprecion.length);
+          return [true, exprecion];
+        } else {
+          errorEncontrado =
+            errorEncontrado +
+            "\nLa variable '" +
+            nombre +
+            "' no es de tipo numero";
+          return [false, 0];
+        }
+      } else {
+        errorEncontrado =
+          errorEncontrado +
+          "\nLa variable '" +
+          nombre +
+          "' no existe. Declarala primero en 'variabili'";
+        return [false, 0];
+      }
+    }
+  }
+  return [true, exprecion];
+}
 //Verificar si se puede declarar una variable, metodo, clase o subclase
 function tengoLosPadresCorrectos(tablaDeSimbolos, i) {
-  console.log("Tabla de funciones: ");
-  console.log(tablaDeFunciones);
-  console.log("Tabla de variables: ");
-  console.log(tablaDeVariables);
+  // console.log("Tabla de funciones: ");
+  // console.log(tablaDeFunciones);
+  // console.log("Tabla de variables: ");
+  // console.log(tablaDeVariables);
   //Verifica mediante los valores que retorna el metodo 'buscarEnTablaDeFunciones' si puede existir la declaracion
   let soy = tablaDeSimbolos[i].opCode;
   let nombreVariable = tablaDeSimbolos[i].token;
@@ -218,7 +298,7 @@ function tengoLosPadresCorrectos(tablaDeSimbolos, i) {
   let miHermanoEs;
   let soySuHijo;
   let miHermanoCerro;
-  console.log("Soy: " + soy);
+  // console.log("Soy: " + soy);
   //Verificar si la tabla de funciones esta vacia
   if (tablaDeFunciones.length > 0) {
     miPadreEs = tablaDeFunciones[0].tipo;
@@ -250,7 +330,7 @@ function tengoLosPadresCorrectos(tablaDeSimbolos, i) {
   if (soy == "sentencia") caso = 3;
   if (soy == "tdT" || soy == "tdP" || soy == "tdC" || soy == "tdB") caso = 4;
   if (soy == "c") caso = 5;
-  console.log(caso);
+  // console.log(caso);
   switch (caso) {
     case 2:
       if (miPadreEs == "c") {
@@ -547,13 +627,20 @@ function principale_inizio(OrigenOPcode, pos) {
           pos++;
           if (OrigenOPcode[pos].opCode == "io") {
             pos++;
+            let [sentencias, nuevai] = construirTablaDeSentencias(
+              OrigenOPcode,
+              pos
+            );
+            pos = nuevai;
+            let cierre = OrigenOPcode[nuevai].linea;
             construirTablaDeFunciones(
               linea,
               columna,
               tipo,
               nombre,
               argumentosDePrincipale_inizio,
-              false
+              false,
+              sentencias
             );
             return [true, pos];
           } else {
@@ -832,7 +919,7 @@ function comprobarMetodo(OPcode, pos) {
                 cierre, //tal vez que sea nuevai
                 sentencias
               );
-              return [true, pos+1];
+              return [true, pos + 1];
             } else {
               errorEncontrado =
                 "Se esperaba 'io' (~) despues de la sentencia 'ci' (_inizio)";
@@ -879,7 +966,7 @@ function construirTablaDeSentencias(OPcode, pos) {
           evitarRep < 100 &&
           OPcode[pos].opCode != "edcFR"
         ) {
-          console.log("Sentencia:");
+          // console.log("Sentencia:");
           linea.push(OPcode[pos]);
           pos++;
           evitarRep++;
@@ -892,8 +979,196 @@ function construirTablaDeSentencias(OPcode, pos) {
       break;
     }
   }
-  console.log(sentencias);
+  // console.log(sentencias);
   return [sentencias, nuevai];
+}
+
+//!Metodo para comprobar las sentencias dentro de un metodo o clase
+function sentencias(listaDeSentencias) {
+  for (let i = 0; i < listaDeSentencias.length; i++) {
+    let sentencia = listaDeSentencias[i];
+    let opCode = sentencia[0].opCode;
+    switch (opCode) {
+      case "nVar":
+        //Asignacion de variables
+        if (!sentenciaAsignacionVariable(sentencia)) {
+          errorSintactico(errorEncontrado);
+          return;
+        }
+        break;
+      case "mfRi":
+        //Funcion nativa del lenguage que funciona de input
+        if (!sentenciaFuncionNativaInput(sentencia)) {
+          errorSintactico(errorEncontrado);
+          return;
+        }
+        break;
+      case "mfSt":
+        //Funcion nativa del lenguage que funciona de output
+        if (!sentenciaFuncionNativaOuput(sentencia)) {
+          errorSintactico(errorEncontrado);
+          return;
+        }
+    }
+  }
+  return false;
+}
+
+//Metodo para realizar las sentencias de asignacion de variables
+function sentenciaAsignacionVariable(sentencia) {
+  let i = 0;
+  let nombreVariable1 = sentencia[i].token;
+  let variable1 = ([existe, posicion] =
+    buscarEnTablaDeVariables(nombreVariable1));
+  if (variable1[0]) {
+    i++;
+    if (sentencia[i].opCode == "asig=") {
+      i++;
+      //Si el tipo de dato siguiente es una cadena
+      if (sentencia[i].opCode == "cad") {
+        //Verificar que la variable sea de tipo cadena
+        if (tablaDeVariables[posicion].tipo == "cad") {
+          //asigna la cadena a la variable
+          let cadena = sentencia[i].token;
+          tablaDeVariables[posicion].valor = cadena;
+          console.log(tablaDeVariables);
+          return true;
+        } else {
+          errorEncontrado =
+            errorEncontrado +
+            "Error en la asignacion de la variable, la variable " +
+            nombreVariable1 +
+            " no es de tipo catena";
+          return false;
+        }
+      } else if (
+        sentencia[i].opCode == "numE" ||
+        sentencia[i].opCode == "numF" ||
+        sentencia[i].opCode == "nVar"
+      ) {
+        //Verifica y evalua la exprecion matematica
+        const [evaluaExpresion, pos, evaluada] = aritLogic(sentencia, i);
+        if (evaluaExpresion) {
+          //Verificar si la variable1 es de tipo entero
+          if (tablaDeVariables[posicion].tipo == "numE") {
+            //Verificar que 'evaluada' sea de tipo entero
+            if (Number.isInteger(evaluada)) {
+              //Asigna el valor de la exprecion a la variable
+              tablaDeVariables[posicion].valor = evaluada;
+              return true;
+            } else {
+              errorEncontrado =
+                errorEncontrado +
+                "Error en la asignacion de la variable, la variable " +
+                nombreVariable1 +
+                " no puede recibir el valor de esta operacion por que el resultado no es de tipo entero";
+              return false;
+            }
+          } else if (tablaDeVariables[posicion].tipo == "numF") {
+            //Asignar el valor de la exprecion a la variable
+            tablaDeVariables[posicion].valor = evaluada;
+            return true;
+          } else {
+            errorEncontrado =
+              errorEncontrado +
+              "Error en la asignacion de la variable, la variable " +
+              nombreVariable1 +
+              " no es de tipo numero, por lo tanto no puede recibir el valor de esta operacion";
+            return false;
+          }
+        } else {
+          errorEncontrado =
+            errorEncontrado +
+            "Error en la asignacion de la variable, la variable ";
+          return false;
+        }
+      }
+    } else {
+      errorEncontrado =
+        errorEncontrado +
+        "Error en la asignacion de variables, se esperaba '=' para asignar un nuevo valor a la variable " +
+        sentencia[0].token;
+      return false;
+    }
+  } else {
+    errorEncontrado =
+      errorEncontrado +
+      "Error en la asignacion de valores, la variable " +
+      sentencia[0].token +
+      " no existe. Declarala antes en la clase 'variabili'";
+    return false;
+  }
+}
+
+//Metodo para revisar las sentencia de input nativa del lenguaje
+function sentenciaFuncionNativaInput(sentencia) {
+  console.log(sentencia);
+  pos = 1;
+  if (sentencia[pos].opCode == "rp:") {
+    pos++;
+    if (sentencia[pos].opCode == "nVar") {
+      
+      pos++;
+      if (sentencia[pos].opCode == "rp:") {
+        pos++;
+        if (sentencia[pos].opCode == "fin?") {
+          return true;
+        } else {
+          errorEncontrado =
+            errorEncontrado + "Se esperaba el final de la sentencia '?'";
+          return false;
+        }
+      } else {
+        errorEncontrado =
+          errorEncontrado +
+          "Se esperaba un ':' despues de el nomre de la variable";
+        return false;
+      }
+    } else {
+      errorEncontrado =
+        errorEncontrado +
+        "Error en la funcion nativa, se esperaba una variable en la que recibir el  input.";
+      return false;
+    }
+  } else {
+    errorEncontrado =
+      errorEncontrado +
+      "Error en la sentencia de input (ricevere), se esperaba ':' antes del nombre de la variable";
+    return false;
+  }
+}
+//Metodo para revisar las sentencias de output nativa del lenguaje
+function sentenciaFuncionNativaOuput(sentencia) {
+  pos = 1;
+  if (sentencia[pos].opCode == "rp:") {
+    pos++;
+    if (sentencia[pos].opCode == "nVar") {
+      pos++;
+      if (sentencia[pos].opCode == "rp:") {
+        pos++;
+        if (sentencia[pos].opCode == "fin?") {
+          return true;
+        } else {
+          errorEncontrado =
+            errorEncontrado + "Se esperaba el final de la sentencia '?'";
+          return false;
+        }
+      } else {
+        errorEncontrado =
+
+          errorEncontrado + "Se esperaba un ':' despues de el nomre de la variable";
+        return false;
+      }
+    } else {
+      errorEncontrado =
+        errorEncontrado + "Error en la funcion nativa, se esperaba una variable o cadena que imprimir.";
+      return false;
+    }
+  } else {
+    errorEncontrado =
+      errorEncontrado + "Error en la sentencia de output (stampa), se esperaba ':' antes del nombre de la variable";
+    return false;
+  }
 }
 
 //Metodo que retorna el tipo de dato de un opCode
@@ -978,6 +1253,7 @@ function construirTablaDeArgumentos(OrigenOPcode, i) {
 function aritLogic(OrigenOPcode, i) {
   let exprecion = "";
   let exprecionOriginal;
+  let exprecionConVariablesAsignadas = "";
   //Mientras el siguiente elemento no sea diferente de el opcode de "numE", "numF", "oa+", "oa-", "oa*", "oa/" o "oa%" guardar la concatenacon de los valores en la variable evaluacionAritmetica.
   // while (
   //   OrigenOPcode[i].opCode == "numE" ||
@@ -1005,6 +1281,22 @@ function aritLogic(OrigenOPcode, i) {
   //Guardamos la exprecion original para poder evaluarla despues
   exprecionOriginal = exprecion;
   //console.log("Exprecion original: " + exprecionOriginal);
+  //Validamos si es que la exprecion involucra variables
+  while (exprecion.includes("$")) {
+    //Si la exprecion contiene variables, evaluamos la exprecion
+    const [evaluacionV, exprecionNueva] = resolverValoresDeVariables(exprecion);
+    if (evaluacionV) {
+      exprecion = exprecionNueva;
+    } else {
+      errorEncontrado =
+        errorEncontrado + "\nError al evaluar la exprecion matematica";
+      return [false, i, exprecionOriginal];
+    }
+  }
+
+  exprecionConVariablesAsignadas = exprecion;
+
+  //console.log("Exprecion evaluando variables: " + exprecion);
   //!Hasta este momento tenemos una exprecion cruda, tal que '5+5', se convertira en 'e+e' para ser evaluada
   //Eliminar puntos decimales de la exprecion
   exprecion = exprecion.replace(/\./g, "");
@@ -1017,7 +1309,7 @@ function aritLogic(OrigenOPcode, i) {
       exprecionOriginal;
     return [false, i, exprecionOriginal];
   } else {
-    return [true, i, eval(exprecionOriginal)];
+    return [true, i, eval(exprecionConVariablesAsignadas)];
   }
 }
 
