@@ -8,11 +8,6 @@ function mainSintactico() {
   if (tablaDeSimbolos.length > 0) {
     //Recorre la tabla de simbolos con un for
     for (var i = 0; i < tablaDeSimbolos.length; i++) {
-      //!Para ver el seguimiento de la ejecucion del analizador sintactico
-      // console.log("Tabla de funciones: ");
-      // console.log(tablaDeFunciones);
-      console.log("Tabla de variables: ");
-      console.log(tablaDeVariables);
       //!Comprueba si existe classe en la tabla de simbolos
       if (tablaDeSimbolos[i].opCode == "c") {
         const [evaluaClasePrincipal, nuevai] = clasePrincipal(
@@ -138,6 +133,7 @@ function mainSintactico() {
         }
         continue;
       }
+
       //!Error de pasar caracter  de fin de lineas ?
       if (tablaDeSimbolos[i].opCode == "fin?") {
         continue;
@@ -164,6 +160,11 @@ function mainSintactico() {
       "La tabla de simbolos esta vacia. \n Realiza el analisis lexico primero"
     );
   }
+  //!Para ver el seguimiento de la ejecucion del analizador sintactico
+  console.log("Tabla de funciones: ");
+  console.log(tablaDeFunciones);
+  console.log("Tabla de variables: ");
+  console.log(tablaDeVariables);
 }
 
 //!Funcion para testeo-- HTML boton "Prueba"
@@ -320,10 +321,11 @@ function tengoLosPadresCorrectos(tablaDeSimbolos, i) {
   //!Regla 1 aplicada
   //*2.-Si soy un metodo debo verificar que la clase padre exista, que se encuentre en la tabla de funciones declarada antes y que no se haya cerrado
   //!Regla 2 aplicada
-  //*3.-Si soy una sentencia debo verificar que la clase prinzipale_inizio o un metodo sea el que me contenga, que se encuentre en la tabla de funciones declarada antes y que no se haya cerrado
+  //3.-Si soy una sentencia debo verificar que la clase prinzipale_inizio o un metodo sea el que me contenga, que se encuentre en la tabla de funciones declarada antes y que no se haya cerrado
   //*4.-Si soy la declaracion de una variable debo verificar que la clase Variables exista y que sea la que me contenga, que se encuentre en la tabla de funciones declarada antes y que no se haya cerrado
   //!Regla 4 aplicada
   //*5.-Si soy una clase principal, debo verificar que yo no sea un impostor (que una clase principal ya exista)
+  //!Regla 5 aplicada
 
   if (soy == "iVar" || soy == "cmi") caso = 1;
   if (soy == "mi") caso = 2;
@@ -335,7 +337,10 @@ function tengoLosPadresCorrectos(tablaDeSimbolos, i) {
     case 2:
       if (miPadreEs == "c") {
         if (soySuHijo) {
-          if (miHermanoEs == "iVar" && miHermanoCerro) {
+          if (
+            miHermanoEs == "iVar" ||
+            (miHermanoEs == "mi" && miHermanoCerro)
+          ) {
             return true;
           } else {
             errorEncontrado =
@@ -715,6 +720,7 @@ function declaracionVariables(origenOPcode, pos) {
                   errorEncontrado =
                     errorEncontrado +
                     "Error en la declaracion de variables, el valor obtenido despues de la evaluacion aritmetica no es un entero. Se esperaba un entero.";
+                  return [false, pos];
                 }
               } else {
                 construirTablaDeVariables(
@@ -919,6 +925,7 @@ function comprobarMetodo(OPcode, pos) {
                 cierre, //tal vez que sea nuevai
                 sentencias
               );
+              //Metodo para comprobar sentencias
               return [true, pos + 1];
             } else {
               errorEncontrado =
@@ -943,7 +950,9 @@ function comprobarMetodo(OPcode, pos) {
   } else {
     errorEncontrado =
       +errorEncontrado +
-      "\nError en la sentencia, el metodo no esta en el lugar correcto";
+      "\nError en la sentencia, el metodo '" +
+      OPcode[pos + 1].token +
+      "' no esta en el lugar correcto";
     return [false, pos];
   }
 }
@@ -982,7 +991,7 @@ function construirTablaDeSentencias(OPcode, pos) {
   // console.log(sentencias);
   return [sentencias, nuevai];
 }
-
+//sentencias()
 //!Metodo para comprobar las sentencias dentro de un metodo o clase
 function sentencias(listaDeSentencias) {
   for (let i = 0; i < listaDeSentencias.length; i++) {
@@ -1082,6 +1091,28 @@ function sentenciaAsignacionVariable(sentencia) {
             "Error en la asignacion de la variable, la variable ";
           return false;
         }
+      } else if (sentencia[i].opCode == "tdV" || sentencia[i].opCode == "tdF") {
+        //Verificar que la variable sea de tipo booleano
+        if (tablaDeVariables[posicion].tipo == "tdB") {
+          //Asignar el valor de la exprecion a la variable
+          tablaDeVariables[posicion].valor = sentencia[i].token;
+          return true;
+        } else {
+          errorEncontrado =
+            errorEncontrado +
+            "Error en la asignacion de la variable, la variable " +
+            nombreVariable1 +
+            " no es de tipo booleano";
+          return false;
+        }
+      } else {
+        errorEncontrado =
+          errorEncontrado +
+          "Error en la asignacion de la variable, lo que se intenta asignas a la variable  " +
+          nombreVariable1 +
+          "  no es de tipo cadena, boleana ni numerica. Error en la linea " +
+          sentencia[i].linea;
+        return false;
       }
     } else {
       errorEncontrado =
@@ -1107,7 +1138,6 @@ function sentenciaFuncionNativaInput(sentencia) {
   if (sentencia[pos].opCode == "rp:") {
     pos++;
     if (sentencia[pos].opCode == "nVar") {
-      
       pos++;
       if (sentencia[pos].opCode == "rp:") {
         pos++;
@@ -1115,25 +1145,34 @@ function sentenciaFuncionNativaInput(sentencia) {
           return true;
         } else {
           errorEncontrado =
-            errorEncontrado + "Se esperaba el final de la sentencia '?'";
+            errorEncontrado +
+            "Se esperaba el final de la sentencia '?'" +
+            "Error en la linea" +
+            sentencia[pos].linea;
           return false;
         }
       } else {
         errorEncontrado =
           errorEncontrado +
-          "Se esperaba un ':' despues de el nomre de la variable";
+          "Se esperaba un ':' despues de el nomre de la variable en la sentencia 'ricevere' " +
+          "Error en la linea" +
+          sentencia[pos].linea;
         return false;
       }
     } else {
       errorEncontrado =
         errorEncontrado +
-        "Error en la funcion nativa, se esperaba una variable en la que recibir el  input.";
+        "Error en la funcion nativa 'ricevere', se esperaba una variable en la que recibir el  input." +
+        "Error en la linea" +
+        sentencia[pos].linea;
       return false;
     }
   } else {
     errorEncontrado =
       errorEncontrado +
-      "Error en la sentencia de input (ricevere), se esperaba ':' antes del nombre de la variable";
+      "Error en la sentencia de input 'ricevere', se esperaba ':' antes del nombre de la variable" +
+      "Error en la linea" +
+      sentencia[pos].linea;
     return false;
   }
 }
@@ -1142,7 +1181,14 @@ function sentenciaFuncionNativaOuput(sentencia) {
   pos = 1;
   if (sentencia[pos].opCode == "rp:") {
     pos++;
-    if (sentencia[pos].opCode == "nVar") {
+    if (
+      sentencia[pos].opCode == "nVar" ||
+      sentencia[pos].opCode == "numE" ||
+      sentencia[pos].opCode == "numF" ||
+      sentencia[pos].opCode == "tdB" ||
+      sentencia[pos].opCode == "tdB" ||
+      sentencia[pos].opCode == "cad"
+    ) {
       pos++;
       if (sentencia[pos].opCode == "rp:") {
         pos++;
@@ -1150,26 +1196,40 @@ function sentenciaFuncionNativaOuput(sentencia) {
           return true;
         } else {
           errorEncontrado =
-            errorEncontrado + "Se esperaba el final de la sentencia '?'";
+            errorEncontrado +
+            "Se esperaba el final de la sentencia '?'" +
+            "Error en la linea " +
+            sentencia[pos].linea;
           return false;
         }
       } else {
         errorEncontrado =
-
-          errorEncontrado + "Se esperaba un ':' despues de el nomre de la variable";
+          errorEncontrado +
+          "Se esperaba un ':' despues de el nomre de la variable" +
+          "Error en la linea " +
+          sentencia[pos].linea;
         return false;
       }
     } else {
       errorEncontrado =
-        errorEncontrado + "Error en la funcion nativa, se esperaba una variable o cadena que imprimir.";
+        errorEncontrado +
+        "Error en la funcion nativa, se esperaba una variable, numero entero, flotante, booleano o cadena que imprimir." +
+        "Error en la linea " +
+        sentencia[pos].linea;
       return false;
     }
   } else {
     errorEncontrado =
-      errorEncontrado + "Error en la sentencia de output (stampa), se esperaba ':' antes del nombre de la variable";
+      errorEncontrado +
+      "Error en la sentencia de output (stampa), se esperaba ':' antes del nombre de la variable" +
+      "Error en la linea " +
+      sentencia[pos].linea;
     return false;
   }
 }
+
+//Metodo para revisar las sentencias para llamada de funciones
+function sentenciaLlamadaFuncionChimare(sentencia) {}
 
 //Metodo que retorna el tipo de dato de un opCode
 function tipoDeDato(opCode) {

@@ -1,6 +1,5 @@
 // Este es el archivo en el que se desarrollara el codigo del analizador lexico
 
-
 //Metodo que se encarga recuperar el texto (codigo) que hay en la etiqueta <textarea> del documento html
 function getTextOfHMTL() {
   //Recuperamos el texto del documento html
@@ -514,14 +513,38 @@ function tokenConstructor(lineasCodigo) {
 
       //!Si encuentra la palabra VERO, es una palabra reservada para definir booleanos verdaderos
       if (lineasCodigo[i].substring(j, j + 4) == "VERO") {
-        construirTablaDeSimbolos(i+1, j+1, "palabra reservada", "VERO", "tdV");
+        construirTablaDeSimbolos(
+          i + 1,
+          j + 1,
+          "palabra reservada",
+          "VERO",
+          "tdV"
+        );
         j = j + 3;
         continue;
       }
       //!Si encuentra la palabra IMPOSTORE, es una palabra reservada para definir booleanos falsos
       if (lineasCodigo[i].substring(j, j + 9) == "IMPOSTORE") {
-        construirTablaDeSimbolos(i+1, j+1, "palabra reservada", "IMPOSTORE", "tdF");
+        construirTablaDeSimbolos(
+          i + 1,
+          j + 1,
+          "palabra reservada",
+          "IMPOSTORE",
+          "tdF"
+        );
         j = j + 8;
+        continue;
+      }
+      //! Si encuentra la palabra retorne, es una palabra reservada para definir retornos
+      if (lineasCodigo[i].substring(j, j + 7) == "retorne") {
+        construirTablaDeSimbolos(
+          i + 1,
+          j + 1,
+          "palabra reservada",
+          "retorne",
+          "tdR"
+        );
+        j = j + 6;
         continue;
       }
 
@@ -739,5 +762,3 @@ function mainLexico() {
   //Mostramos las tablas en el html
   showTablesOnHTML();
 }
-
-
