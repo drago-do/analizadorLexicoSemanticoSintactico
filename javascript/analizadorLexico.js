@@ -134,7 +134,7 @@ function tokenConstructor(lineasCodigo) {
         continue;
       }
       //!Si la linea empieza con la palabra fine_se, es el fin de la estructura de control "if else"
-      if (lineasCodigo[i].substring(j, j + 7) == "fine_se") {
+      if (lineasCodigo[i].substring(j, j + 8) == "~fine_se") {
         //Guardamos la palabra reservada en nuestra tabla de simbolos
         construirTablaDeSimbolos(
           i + 1,
@@ -143,7 +143,7 @@ function tokenConstructor(lineasCodigo) {
           "fin_se",
           "edcFS"
         );
-        j = j + 6;
+        j = j + 7;
         continue;
       }
       //!Si existe la palabra reservada fine, entonces se refiere a el termino de declaracion de variables, funciones, etc

@@ -169,7 +169,12 @@ function mainSintactico() {
 
 //!Funcion para testeo-- HTML boton "Prueba"
 function test() {
-  sentencias(tablaDeFunciones[tablaDeFunciones.length - 1].sentencias);
+  let sentenciasCorrectas = sentencias(
+    tablaDeFunciones[tablaDeFunciones.length - 3].sentencias
+  );
+  if (!sentenciasCorrectas[0]) {
+    errorSintactico(errorEncontrado);
+  }
 }
 
 //!Funcion para mandar errores a la consola de html
@@ -217,7 +222,7 @@ function cierreDeClase(tablaFunciones, lineaDeCierre) {
 function buscarEnTablaDeFunciones(nombre) {
   if (tablaDeFunciones.length > 0) {
     for (var i = 0; i < tablaDeFunciones.length; i++) {
-      if (tablaDeFunciones[i].tipo == nombre) {
+      if (tablaDeFunciones[i].nombre == nombre) {
         let linea = tablaDeFunciones[i].linea;
         let cierre = tablaDeFunciones[i].cierre;
         return [true, linea, cierre];
@@ -997,30 +1002,99 @@ function sentencias(listaDeSentencias) {
   for (let i = 0; i < listaDeSentencias.length; i++) {
     let sentencia = listaDeSentencias[i];
     let opCode = sentencia[0].opCode;
+    let cicloForAnidado = 0;
+    let condicionIfAnidado = 0;
     switch (opCode) {
       case "nVar":
         //Asignacion de variables
         if (!sentenciaAsignacionVariable(sentencia)) {
           errorSintactico(errorEncontrado);
-          return;
+          return [false, i];
+        } else {
+          continue;
         }
         break;
       case "mfRi":
         //Funcion nativa del lenguage que funciona de input
         if (!sentenciaFuncionNativaInput(sentencia)) {
           errorSintactico(errorEncontrado);
-          return;
+          return [false, i];
+        } else {
+          continue;
         }
         break;
       case "mfSt":
         //Funcion nativa del lenguage que funciona de output
         if (!sentenciaFuncionNativaOuput(sentencia)) {
           errorSintactico(errorEncontrado);
-          return;
+          return [false, i];
+        } else {
+          continue;
         }
+        break;
+      case "mfCh":
+        //Asignacion de variables
+        if (!sentenciaLlamadaFuncionChimare(sentencia, 1)) {
+          errorSintactico(errorEncontrado);
+          return [false, i];
+        } else {
+          continue;
+        }
+        break;
+      case "edcR":
+        //Verificar ciclo for
+        if (!sentenciaCicloFor(sentencia, 1)) {
+          errorSintactico(errorEncontrado);
+          return [false, i];
+        } else {
+          cicloForAnidado++;
+          continue;
+        }
+        break;
+      case "edcFR":
+        //Verificar ciclo for
+        cicloForAnidado--;
+        continue;
+        break;
+
+      case "edcSe":
+        //Verificar condicion  if
+        if (!sentenciaCondicionIf(sentencia, 1)) {
+          errorSintactico(errorEncontrado);
+          return [false, i];
+        } else {
+          condicionIfAnidado++;
+          continue;
+        }
+        break;
+
+      case "edcAl":
+        //Verificar condicion  else
+        if (sentencia[1].opCode == "io") {
+          continue;
+        } else {
+          errorEncontrado = "Se esperaba 'io' despues de la sentencia 'edcAl'";
+          return [false, i];
+        }
+        break;
+
+      case "edcFS":
+        //Verificar ciclo for
+        condicionIfAnidado--;
+        continue;
+        break;
+
+      default:
+        errorEncontrado =
+          errorEncontrado +
+          "Error en la sentencia de la linea " +
+          sentencia[0].linea +
+          "Sentencia no reconocida";
+        return [false, i];
+        break;
     }
   }
-  return false;
+  return [true, 0];
 }
 
 //Metodo para realizar las sentencias de asignacion de variables
@@ -1105,6 +1179,23 @@ function sentenciaAsignacionVariable(sentencia) {
             " no es de tipo booleano";
           return false;
         }
+      } else if (sentencia[i].opCode == "mfCh") {
+        i++;
+        let llamadaFuncionCorrecta = sentenciaLlamadaFuncionChimare(
+          sentencia,
+          i
+        );
+        if (llamadaFuncionCorrecta) {
+          return true;
+        } else {
+          errorEncontrado =
+            errorEncontrado +
+            "Error en la asignacion de la variable, La llaamada a la funcion " +
+            nombreVariable1 +
+            " no es correcta. Error en la linea " +
+            sentencia[i].linea;
+          return false;
+        }
       } else {
         errorEncontrado =
           errorEncontrado +
@@ -1133,7 +1224,6 @@ function sentenciaAsignacionVariable(sentencia) {
 
 //Metodo para revisar las sentencia de input nativa del lenguaje
 function sentenciaFuncionNativaInput(sentencia) {
-  console.log(sentencia);
   pos = 1;
   if (sentencia[pos].opCode == "rp:") {
     pos++;
@@ -1187,8 +1277,19 @@ function sentenciaFuncionNativaOuput(sentencia) {
       sentencia[pos].opCode == "numF" ||
       sentencia[pos].opCode == "tdB" ||
       sentencia[pos].opCode == "tdB" ||
-      sentencia[pos].opCode == "cad"
+      sentencia[pos].opCode == "cad" ||
+      sentencia[pos].opCode == "mfCh"
     ) {
+      if (sentencia[pos].opCode == "mfCh") {
+        pos++;
+        let llamadaCorrecta = sentenciaLlamadaFuncionChimare(sentencia, pos);
+        if (llamadaCorrecta[0] == false) {
+          errorEncontrado =
+            errorEncontrado + "Error en la linea " + sentencia[pos].linea;
+        } else {
+          pos = llamadaCorrecta[1] - 1;
+        }
+      }
       pos++;
       if (sentencia[pos].opCode == "rp:") {
         pos++;
@@ -1229,7 +1330,265 @@ function sentenciaFuncionNativaOuput(sentencia) {
 }
 
 //Metodo para revisar las sentencias para llamada de funciones
-function sentenciaLlamadaFuncionChimare(sentencia) {}
+function sentenciaLlamadaFuncionChimare(sentencia, pos) {
+  if (sentencia[pos].opCode == "rp:") {
+    pos++;
+    if (sentencia[pos].opCode == "nCM") {
+      //Rescatar nombre de la funcion
+      let nombreFuncion = sentencia[pos].token;
+      pos++;
+      if (sentencia[pos].opCode == "rp:") {
+        pos++;
+        //Construccion tabla de argumentos
+        const [evaluaArgumentos, argumentos, nuevaPosicion] =
+          construirTablaDeArgumentos(sentencia, pos);
+        if (evaluaArgumentos == true) {
+          pos = nuevaPosicion;
+          argumentosDeFuncion = argumentos;
+          //Revisar si la funcion existe
+          let funcionExiste = buscarEnTablaDeFunciones(nombreFuncion);
+          if (funcionExiste[0] == true) {
+            pos++;
+            if (sentencia[pos].opCode == "rp:") {
+              pos++;
+              if (sentencia[pos].opCode == "fin?") {
+                return true;
+              } else {
+                if (sentencia[pos].opCode == "rp:") {
+                  return [true, pos];
+                }
+                errorEncontrado =
+                  errorEncontrado +
+                  "Se esperaba el final de la sentencia '?'" +
+                  "Error en la linea " +
+                  sentencia[pos].linea;
+              }
+            } else {
+              errorEncontrado =
+                errorEncontrado +
+                "Se esperaba un ':' para finalizar el llamado de la funcion. Error en la linea " +
+                sentencia[pos].linea;
+            }
+          } else {
+            errorEncontrado =
+              errorEncontrado +
+              "Error en la llamada de funcion, la funcion " +
+              nombreFuncion +
+              " no existe. Declarala antes de usarla. Error en la linea " +
+              sentencia[posicion].linea;
+            return false;
+          }
+        } else {
+          errorEncontrado =
+            errorEncontrado +
+            "Losr agumentos de la funcion tienen problemas para ser evaluados. Error en la linea " +
+            sentencia[pos].linea;
+          return false;
+        }
+      } else {
+        errorEncontrado =
+          errorEncontrado +
+          "Error en la llamada de la funcion " +
+          nombreFuncion +
+          " se esperaba ':' despues  el nombre de la funcion para la declaracion de los parametros";
+        sentencia[pos].linea;
+        return false;
+      }
+    } else {
+      errorEncontrado =
+        errorEncontrado +
+        "Se esperaba el nombre de la funcion a llamar en la funcion chimare. " +
+        "Error en la linea " +
+        sentencia[pos].linea;
+      return false;
+    }
+  } else {
+    errorEncontrado =
+      errorEncontrado +
+      "Error en la sentencia de llamada de funcion, se esperaba el operador ':' para el inicio de los argumentos de chimare. " +
+      "Error en la linea " +
+      sentencia[pos].linea;
+    return false;
+  }
+}
+//Metodo para revisar las sentencias de el ciclo for
+function sentenciaCicloFor(sentencia, pos) {
+  if (sentencia[pos].opCode == "rp:") {
+    pos++;
+    if (sentencia[pos].opCode == "nVar") {
+      pos++;
+      if (sentencia[pos].opCode == "asig=") {
+        pos++;
+        if (sentencia[pos].opCode == "numE") {
+          pos++;
+          if (sentencia[pos].opCode == "sep,") {
+            pos++;
+            if (sentencia[pos].opCode == "or<") {
+              pos++;
+              if (sentencia[pos].opCode == "nVar") {
+                pos++;
+                if (sentencia[pos].opCode == "rp:") {
+                  pos++;
+                  if (sentencia[pos].opCode == "io") {
+                    return true;
+                  } else {
+                    errorEncontrado =
+                      errorEncontrado +
+                      "Se esperaba el operador de inicio 'io' en la linea " +
+                      sentencia[pos].linea;
+                    return false;
+                  }
+                } else {
+                  errorEncontrado =
+                    errorEncontrado +
+                    "Error en declaracion repitere, se esperaba un operador ':' . Error en la linea " +
+                    sentencia[pos].linea;
+                  return false;
+                }
+              } else {
+                errorEncontrado =
+                  errorEncontrado +
+                  "Se esperaba una variable despues del operador 'or<' en la sentencia de ciclo for. Error en la linea " +
+                  sentencia[pos].linea;
+                return false;
+              }
+            } else {
+              errorEncontrado =
+                errorEncontrado +
+                "Error en la sentencia de ciclo for, se esperaba 'or<' despues de la coma. " +
+                "Error en la linea " +
+                sentencia[pos].linea;
+              return false;
+            }
+          } else {
+            errorEncontrado =
+              errorEncontrado +
+              "Error en la sentencia de ciclo for, se esperaba un ',' despues de la variable inicial. Error en la linea " +
+              sentencia[pos].linea;
+            return false;
+          }
+        } else {
+          errorEncontrado =
+            errorEncontrado +
+            "Error en la linea " +
+            sentencia[pos].linea +
+            "Se esperaba un numero entero desde el que inciar el ciclo ripetere";
+          return false;
+        }
+      } else {
+        errorEncontrado =
+          errorEncontrado +
+          "Se esperaba ' = ' despues de la variable. Error en la linea " +
+          sentencia[pos].linea;
+        return false;
+      }
+    } else {
+      errorEncontrado =
+        errorEncontrado +
+        "Se esperaba una variable de indice para el ciclo ripetere. Error en linea " +
+        sentencia[pos].linea;
+      return false;
+    }
+  } else {
+    errorEncontrado =
+      errorEncontrado +
+      "Se esperaba el uso del operador ':' despues de la palabra reservada ripetere. Error en la linea " +
+      sentencia[pos].linea;
+    return false;
+  }
+}
+
+//Metodo para revisar las sentencias de la condicion if
+function sentenciaCondicionIf(sentencia, pos) {
+  if (sentencia[pos].opCode == "rp:") {
+    pos++;
+    let evaluable = evaluarCondicionIf(sentencia, pos);
+    if (evaluable[0]) {
+      pos = evaluable[1] + 1;
+      if (sentencia[pos].opCode == "io") {
+        return true;
+      } else {
+        errorEncontrado =
+          errorEncontrado +
+          "Se esperaba el operador de inicio 'io' en la linea " +
+          sentencia[pos].linea;
+        return false;
+      }
+    } else {
+      errorEncontrado =
+        errorEncontrado +
+        "Error en la sentencia de condicion if, la condicion no es evaluable. Error en la linea " +
+        sentencia[pos].linea;
+      return false;
+    }
+  } else {
+    errorEncontrado =
+      errorEncontrado +
+      "Se esperaba el operador ':' despues de la palabra reservada 'se'. Error en la linea " +
+      sentencia[pos].linea;
+  }
+}
+//!FALTA TERMINAR PARA FASE DE EJECUCION, FALTA TERMINAR PARA FASE DE EJECUCIONFALTA TERMINAR PARA FASE DE EJECUCIONFALTA TERMINAR PARA FASE DE EJECUCIONFALTA TERMINAR PARA FASE DE EJECUCIONFALTA TERMINAR PARA FASE DE EJECUCIONFALTA TERMINAR PARA FASE DE EJECUCIONFALTA TERMINAR PARA FASE DE EJECUCIONFALTA TERMINAR PARA FASE DE EJECUCION
+//Metodo para evaluar las sentencias de la condicion if
+function evaluarCondicionIf(sentencia, pos) {
+  //Recuperar la expresion a evaluar concatenando valores hasta que el opCode de la sentencia sea 'rp:'
+  let expresion = "";
+  while (sentencia[pos].opCode != "rp:") {
+    expresion = expresion + sentencia[pos].token;
+    pos++;
+  }
+  console.log("valor op: " + sentencia[pos].opCode);
+  console.log("Expresion a evaluar: " + expresion);
+  //Si la exprecion a evaluar es VERO o IMPOSTORE retornar true
+  if (expresion == "VERO" || expresion == "IMPOSTORE") {
+    return [true, pos];
+  } else {
+    //Si la exprecion recuperada contiene variables (empiezan con $nombreDeVariable) se remplaza el valor de cada variable
+    //con el valor de la variable en el scope actual
+
+    //Recuperar posicion de la variable
+
+    while (expresion.includes("$")) {
+      let nombreVariable = "$";
+      let posicionVariable = expresion.indexOf("$");
+      //Recuperar caracteres siguientes hasta que sean  igual  de un simbolo como <>=!
+      for (let index = posicionVariable; index < expresion.length; index++) {
+        //Mientras no se encuentre un simbolo de comparacion seguir recuperando caracteres
+        if (
+          expresion[index] != "<" &&
+          expresion[index] != ">" &&
+          expresion[index] != "=" &&
+          expresion[index] != "!"
+        ) {
+          //Concatenar el nombre de la variable
+          let nombreVariable = nombreVariable + expresion[index];
+          //Remplazar el nombre de la variable por el valor 2
+          expresion = expresion.replace(nombreVariable, "2");
+        }
+      }
+      return true;
+
+      //Recuperar el valor de la variable
+      let resultadoBusquedaVariable = buscarEnTablaDeVariables(nombreVariable);
+      if (resultadoBusquedaVariable[0]) {
+      } else {
+        errorEncontrado =
+          errorEncontrado +
+          "No existe la variable " +
+          nombreVariable +
+          " en el scope actual. No puedes comparar nada con una variable no declarada. Error en la linea " +
+          sentencia[pos].linea;
+      }
+    }
+    //Si la exprecion a evaluar contiene operadores logicos se evalua
+    resultadoEvaluacion = eval(expresion);
+    console.log("Resultado de la evaluacion: " + resultadoEvaluacion);
+    return [resultadoEvaluacion, pos];
+  }
+
+  //Evaluar la expresion
+  let resultado = eval(expresion);
+}
 
 //Metodo que retorna el tipo de dato de un opCode
 function tipoDeDato(opCode) {
