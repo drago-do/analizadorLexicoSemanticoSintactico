@@ -133,6 +133,12 @@ function mainSintactico() {
         }
         continue;
       }
+      //Comprueba si existe cierre de la clase main
+      if (tablaDeSimbolos[tablaDeSimbolos.length - 1].opCode != "fc") {
+        errorEncontrado =
+          errorEncontrado + "No existe cierre de la clase principal. ";
+        errorSintactico(errorEncontrado);
+      }
 
       //!Error de pasar caracter  de fin de lineas ?
       if (tablaDeSimbolos[i].opCode == "fin?") {
@@ -165,16 +171,23 @@ function mainSintactico() {
   console.log(tablaDeFunciones);
   console.log("Tabla de variables: ");
   console.log(tablaDeVariables);
+  //!Comprobacion de sentencias de cada metodo
+  tablaDeFunciones.forEach((metodo) => {
+    //Si el metodo es igual a "mi" o "cmi"
+    if (metodo.tipo == "mi" || metodo.tipo == "cmi") {
+      // console.log(metodo.tipo);
+      // console.log(metodo.sentencias);
+      let sentenciasCorrectas = sentencias(metodo.sentencias);
+      if (!sentenciasCorrectas[0]) {
+        errorSintactico(errorEncontrado);
+      }
+    }
+  });
 }
 
 //!Funcion para testeo-- HTML boton "Prueba"
 function test() {
-  let sentenciasCorrectas = sentencias(
-    tablaDeFunciones[tablaDeFunciones.length - 3].sentencias
-  );
-  if (!sentenciasCorrectas[0]) {
-    errorSintactico(errorEncontrado);
-  }
+  //Codigo
 }
 
 //!Funcion para mandar errores a la consola de html
@@ -1084,6 +1097,15 @@ function sentencias(listaDeSentencias) {
         continue;
         break;
 
+      case "tdR":
+        //Verificar valor de retorno
+        if (!sentenciaValorRetorno(sentencia)) {
+          errorSintactico(errorEncontrado);
+          return [false, i];
+        } else {
+          continue;
+        }
+
       default:
         errorEncontrado =
           errorEncontrado +
@@ -1095,6 +1117,12 @@ function sentencias(listaDeSentencias) {
     }
   }
   return [true, 0];
+}
+
+//Metodo para realizar las sentencias de retorno
+function sentenciaValorRetorno(sentencia) {
+  //true
+  return true;
 }
 
 //Metodo para realizar las sentencias de asignacion de variables
@@ -1114,7 +1142,7 @@ function sentenciaAsignacionVariable(sentencia) {
           //asigna la cadena a la variable
           let cadena = sentencia[i].token;
           tablaDeVariables[posicion].valor = cadena;
-          console.log(tablaDeVariables);
+          //console.log(tablaDeVariables);
           return true;
         } else {
           errorEncontrado =
@@ -1502,9 +1530,8 @@ function sentenciaCicloFor(sentencia, pos) {
 function sentenciaCondicionIf(sentencia, pos) {
   if (sentencia[pos].opCode == "rp:") {
     pos++;
-    let evaluable = evaluarCondicionIf(sentencia, pos);
-    if (evaluable[0]) {
-      pos = evaluable[1] + 1;
+    if (true) {
+      pos = sentencia.length - 1;
       if (sentencia[pos].opCode == "io") {
         return true;
       } else {
@@ -1528,67 +1555,6 @@ function sentenciaCondicionIf(sentencia, pos) {
       sentencia[pos].linea;
   }
 }
-//!FALTA TERMINAR PARA FASE DE EJECUCION, FALTA TERMINAR PARA FASE DE EJECUCIONFALTA TERMINAR PARA FASE DE EJECUCIONFALTA TERMINAR PARA FASE DE EJECUCIONFALTA TERMINAR PARA FASE DE EJECUCIONFALTA TERMINAR PARA FASE DE EJECUCIONFALTA TERMINAR PARA FASE DE EJECUCIONFALTA TERMINAR PARA FASE DE EJECUCIONFALTA TERMINAR PARA FASE DE EJECUCION
-//Metodo para evaluar las sentencias de la condicion if
-function evaluarCondicionIf(sentencia, pos) {
-  //Recuperar la expresion a evaluar concatenando valores hasta que el opCode de la sentencia sea 'rp:'
-  let expresion = "";
-  while (sentencia[pos].opCode != "rp:") {
-    expresion = expresion + sentencia[pos].token;
-    pos++;
-  }
-  console.log("valor op: " + sentencia[pos].opCode);
-  console.log("Expresion a evaluar: " + expresion);
-  //Si la exprecion a evaluar es VERO o IMPOSTORE retornar true
-  if (expresion == "VERO" || expresion == "IMPOSTORE") {
-    return [true, pos];
-  } else {
-    //Si la exprecion recuperada contiene variables (empiezan con $nombreDeVariable) se remplaza el valor de cada variable
-    //con el valor de la variable en el scope actual
-
-    //Recuperar posicion de la variable
-
-    while (expresion.includes("$")) {
-      let nombreVariable = "$";
-      let posicionVariable = expresion.indexOf("$");
-      //Recuperar caracteres siguientes hasta que sean  igual  de un simbolo como <>=!
-      for (let index = posicionVariable; index < expresion.length; index++) {
-        //Mientras no se encuentre un simbolo de comparacion seguir recuperando caracteres
-        if (
-          expresion[index] != "<" &&
-          expresion[index] != ">" &&
-          expresion[index] != "=" &&
-          expresion[index] != "!"
-        ) {
-          //Concatenar el nombre de la variable
-          let nombreVariable = nombreVariable + expresion[index];
-          //Remplazar el nombre de la variable por el valor 2
-          expresion = expresion.replace(nombreVariable, "2");
-        }
-      }
-      return true;
-
-      //Recuperar el valor de la variable
-      let resultadoBusquedaVariable = buscarEnTablaDeVariables(nombreVariable);
-      if (resultadoBusquedaVariable[0]) {
-      } else {
-        errorEncontrado =
-          errorEncontrado +
-          "No existe la variable " +
-          nombreVariable +
-          " en el scope actual. No puedes comparar nada con una variable no declarada. Error en la linea " +
-          sentencia[pos].linea;
-      }
-    }
-    //Si la exprecion a evaluar contiene operadores logicos se evalua
-    resultadoEvaluacion = eval(expresion);
-    console.log("Resultado de la evaluacion: " + resultadoEvaluacion);
-    return [resultadoEvaluacion, pos];
-  }
-
-  //Evaluar la expresion
-  let resultado = eval(expresion);
-}
 
 //Metodo que retorna el tipo de dato de un opCode
 function tipoDeDato(opCode) {
@@ -1608,6 +1574,7 @@ function construirTablaDeVariables(_linea, _tipo, _nombre, _valor) {
     tipo: _tipo,
     nombre: _nombre,
     valor: _valor,
+    uso: 0,
   });
 }
 //Metodo para construir los objetos de la tabla de funciones
