@@ -1,4 +1,5 @@
 let argumentosActuales;
+let valorDeRetorno;
 function mainInterprete(funcionAejecutar, argumentos) {
   argumentosActuales = argumentos;
   //Realizar la interpretacion de las sentencias empezando por la lista de sentencias de la clase principal
@@ -61,11 +62,33 @@ function mainInterprete(funcionAejecutar, argumentos) {
           ejecucion = true;
           break;
 
+        case "tdR":
+          //Retornar valor de la funcion actual
+          valorDeRetorno = devolverValorQueRetornaLaFuncion(sentencia);
+          break;
         default:
           break;
       }
     }
   });
+}
+//Metodo para ejecutar la sentencia condicional if
+function devolverValorQueRetornaLaFuncion(sentencia) {
+  //rescatar la condicion a evaluar que empieza en la posicion 2 y termina cuando el siguiente opCode es fin?
+  let condicion = sentencia.slice(2, sentencia.length - 1);
+  console.log(condicion);
+  //Recuperar el token de cada elemento de la condicion y concatenarlo en una cadena
+  let valorARetornan = "";
+  condicion.forEach((elemento) => {
+    //Si el token del elemento contiene una variable, se debe resolver su valor
+    if (elemento.token.includes("$")) {
+      let valor = devolverValorDeVariable(elemento.token);
+      valorARetornan += valor;
+    } else {
+      valorARetornan += elemento.token;
+    }
+  });
+  return eval(valorARetornan);
 }
 
 //Metodo para ejecutar la sentencia condicional if
@@ -204,6 +227,12 @@ function funcionOutput(sentencia) {
   if (valorImprimir.length == 1) {
     valorImprimir = resolverValoresDeVariables(valorImprimir[0].token);
     textoConsola(valorImprimir[1], false);
+  }
+  //Si el token del valor a imprimir es un chimare se ejecuta la funcion chimare
+  else if (valorImprimir[0].token == "chimare") {
+    llamadaFuncionChimare(valorImprimir);
+    //y el valor que devuelve la funcion chimare se imprime en consola
+    textoConsola(valorDeRetorno, false);
   } else {
     //Concatenar los valores que contiene el array valor
     let exprecion = concatenarExprecion(valorImprimir);
