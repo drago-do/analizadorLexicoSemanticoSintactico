@@ -1,0 +1,28 @@
+classe MiPrimeraClase argo::~
+variabili::~
+totale $veces =5?
+totale $i =0?
+totale $contador = 0?
+
+~fine
+
+
+metodo repetir : $veces :_inizio~
+$contador = 0?
+ripetere :$i=0 , < $veces :~
+  #Esto es un comentario no hace nada, esto repite hola las veces necesarias
+  stampa:"Holaaa":?
+  $contador = 1+$contador?
+stampa:$contador:?
+~fine_ripetere
+stampa:"Fin del ciclo for":?
+~fine
+
+principale_inizio : :~
+stampa : "Cuantas veces quieres que se repita hola?  ":?
+ricevere:$veces:?
+chimare: repetir : $veces:  :?
+
+stampa: "Fin Del Programa" : ?
+~fine
+~fine_classe

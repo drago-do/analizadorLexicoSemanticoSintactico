@@ -1,0 +1,43 @@
+classe MiPrimeraClase argo::~
+variabili::~
+totale $i = 0?
+totale $end = 10 ?
+totale $a = 5?
+punto $b = 7.2 + $a + $end?
+totale $veces= 5?
+totale $numero1 =5?
+totale $numero2 =5?
+catena $c = "Que Pez"?
+bool $f = IMPOSTORE?
+~fine
+
+metodo decirHola : $veces : _inizio ~
+ripetere :$i=0 , < $veces :~
+  stampa:"Holaaa varias veces":?
+  stampa:$b:?
+  #Esto es un comentario no hace nada
+~fine_ripetere
+se:5 > 3:~
+stampa:"Si es verdadero realiza está línea":?
+altra~
+stampa:"Si es falso realiza está línea":?
+~fine_se
+stampa:"La variable ingresada fue":?
+stampa:$veces:?
+~fine
+
+metodo por :$numero1 , $numero2:_inizio~
+retorne = $numero1 * $numero2?
+~fine
+
+principale_inizio:$texto,5+5:~
+$c = "Renombra"?
+$a = 5+$end+1+6?
+ricevere:$f:?
+stampa:"valores son":?
+stampa:$a:?
+#stampa:"Multiplicar $numero1 * $numero2  es":?
+#stampa: chimare: por : $numero1, $numero2 : :  :?
+chimare: decirHola : $veces : :?
+~fine
+~fine_classe

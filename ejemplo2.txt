@@ -1,0 +1,28 @@
+classe MiPrimeraClase argo::~
+variabili::~
+totale $numero1 =5?
+totale $numero2 =5?
+
+~fine
+
+
+metodo suma :$numero1 , $numero2:_inizio~
+retorne = $numero1 + $numero2?
+~fine
+
+principale_inizio : :~
+stampa : "Sumar numero1 = 5 y numero2 = 5 es: ":?
+stampa:chimare: suma : $numero1, $numero2 : :  :?
+stampa:"Cuanto quieres que valga ahora el numero 1? ":?
+ricevere:$numero1:?
+
+stampa : chimare :  suma : $numero1, $numero2 : :  :?
+
+se:$numero1 > 5:~
+stampa:"El numero 1 vale mas que 5 wow":?
+altra~
+stampa:"numero 1 vale muy pocooo. Menos de cinco":?
+~fine_se
+stampa: "Fin Del Programa" : ?
+~fine
+~fine_classe

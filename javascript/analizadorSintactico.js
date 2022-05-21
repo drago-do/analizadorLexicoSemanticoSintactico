@@ -987,6 +987,8 @@ function construirTablaDeSentencias(OPcode, pos) {
     if (OPcode[pos].opCode != "fcm") {
       if (OPcode[pos].opCode != "com") {
         //Mientras el opcode no sea el final de la sentencia recupera las sentencias
+        console.log("Sentencia: " + OPcode[pos].opCode);
+        console.log("Token: " + OPcode[pos].token);
         while (
           OPcode[pos].opCode != "fin?" &&
           OPcode[pos].opCode != "io" &&
